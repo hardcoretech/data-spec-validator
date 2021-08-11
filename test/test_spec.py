@@ -2,7 +2,7 @@ import unittest
 from datetime import date
 from itertools import chain
 
-from spec import (
+from data_spec_validator.spec import (
     AMOUNT,
     AMOUNT_RANGE,
     ANY_KEY_EXISTS,

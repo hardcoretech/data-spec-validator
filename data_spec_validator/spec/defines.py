@@ -41,7 +41,7 @@ def not_(check):
 
 
 def get_default_check_2_validator_map():
-    from spec.validators import (
+    from data_spec_validator.spec.validators import (
         AmountRangeValidator,
         AmountValidator,
         AnyKeyExistsValidator,

@@ -5,7 +5,7 @@ from django.core.handlers.wsgi import WSGIRequest
 from django.http import QueryDict
 from rest_framework.request import Request
 
-from spec import validate_data_spec
+from data_spec_validator.spec import validate_data_spec
 
 
 def data_spec_validation(spec):
