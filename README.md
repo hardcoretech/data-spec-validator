@@ -1,7 +1,32 @@
 # data-spec-validator
 
 ## Why
-* TBD
+* To get rid of code snippet like these (... cumbersome and tedious validation)
+``` python
+def do_something(params):
+    val_a_must_int = params.get('a', 0)
+    val_b_must_be_non_empty_list = params.get('b', [])
+    # if key c presents, value c must be a date string between '2000-01-01' to '2020-01-01'
+    val_c_might_be_none = params.get('c', None)
+
+    # check type
+    if type(val_a_must_int) != int:
+      raise XXX
+
+    # check type & value
+    if type(val_b_must_list) != list or len(val_b_must_be_non_empty_list) == 0:
+      raise XXX
+
+    # if value exists, check its value
+    if val_c_might_be_none is not None:
+        date_c = datetime.strptime(val_c_might_be_present, '%Y-%m-%d')
+        date_20000101 = datetime.date(2000, 1, 1)
+        date_20200101 = datetime.date(2020, 1, 1)
+        if not (date_20000101 <= date_c <= date_20200101):
+          raise XXX
+    ...
+    # do something actually
+```
 
 ## Quick Example
 * Do `validate_data_spec` directly wherever you like (see `test_spect.py` for more)
@@ -12,7 +37,7 @@ class SomeSpec:
     field_a = Checker([INT])
     field_b = Checker([DIGIT_STR, OPTIONAL], op=CheckerOP.ANY)
 
-some_data = dict(field_a=3, field_b='4', field_c=list(1,2))
+some_data = dict(field_a=3, field_b='4', field_c=[1,2])
 validate_data_spec(some_data, SomeSpec) # return True
 
 some_data = dict(field_a=4)
@@ -41,7 +66,7 @@ validate_data_spec(another_data, AnotherSpec) # raise Exception
 ```python
 from rest_framework.views import APIView
 
-from decorators import data_spec_validation
+from decorator import data_spec_validation
 from spec import UUID, EMAIL, Checker
 
 class SomeViewSpec:
