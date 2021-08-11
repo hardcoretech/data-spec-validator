@@ -13,9 +13,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setuptools.setup(
     name="data-spec-validator",
     version=about['__version__'],
-    author="Kilik of GoFreight",
+    author="CJHwong, falldog, HardCoreLewis, kilikkuo, xeonchen",
     author_email="pypi@hardcoretech.co",
-    description="simple validation tool for API",
+    description="Simple validation tool for API",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/hardcoretech/data-spec-validator",
