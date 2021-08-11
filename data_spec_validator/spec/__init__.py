@@ -1,8 +1,5 @@
 from .actions import validate_data_spec
 
-# Export custom validator NAME
-from .custom_spec import *
-
 # Export generic validator NAME
 from .defines import (
     AMOUNT,

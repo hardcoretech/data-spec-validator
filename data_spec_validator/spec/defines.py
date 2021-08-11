@@ -1,4 +1,4 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from enum import Enum
 from functools import lru_cache
 
@@ -133,8 +133,9 @@ def get_unknown_field_value():
     return UnknownFieldValue()
 
 
-class BaseValidator(ABCMeta):
+class BaseValidator(metaclass=ABCMeta):
     @staticmethod
+    @abstractmethod
     def validate(value, extra, data):
         raise NotImplementedError
 

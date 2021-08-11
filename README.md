@@ -31,7 +31,7 @@ def do_something(params):
 ## Quick Example
 * Do `validate_data_spec` directly wherever you like (see `test_spect.py` for more)
 ```python
-from spec import INT, DIGIT_STR, ONE_OF, OPTIONAL, Checker, CheckerOP, validate_data_spec
+from data_spec_validator.spec import INT, DIGIT_STR, ONE_OF, OPTIONAL, Checker, CheckerOP, validate_data_spec
 
 class SomeSpec:
     field_a = Checker([INT])
@@ -66,8 +66,8 @@ validate_data_spec(another_data, AnotherSpec) # raise Exception
 ```python
 from rest_framework.views import APIView
 
-from decorator import data_spec_validation
-from spec import UUID, EMAIL, Checker
+from data_spec_validator.decorator import data_spec_validation
+from data_spec_validator.spec import UUID, EMAIL, Checker
 
 class SomeViewSpec:
   param_a = Checker([UUID])
@@ -77,6 +77,34 @@ class SomeView(APIView):
     @data_spec_validation(SomeViewSpec)
     def get(self, request):
         pass
+```
+
+### Register Custom Spec Check & Validator
+- Define custom CHECK constant (`gt_check` in this case) and write custom Validator(`GreaterThanValidator` in this case)
+```python
+gt_check = 'gt_check'
+from data_spec_validator.spec.defines import BaseValidator
+class GreaterThanValidator(BaseValidator):
+    name = gt_check
+
+    @staticmethod
+    def validate(value, extra, data):
+        criteria = extra.get(GreaterThanValidator.name)
+        return value > criteria, ValueError(f'{value} is not greater than {criteria}')
+```
+- Register custom check & validator into data_spec_validator
+```python
+from data_spec_validator.spec import custom_spec, Checker, validate_data_spec
+custom_spec.register(dict(gt_check=GreaterThanValidator()))
+
+class GreaterThanSpec:
+    key = Checker([gt_check], extra={gt_check: 10})
+
+ok_data = dict(key=11)
+validate_data_spec(ok_data, GreaterThanSpec) # return True
+
+nok_data = dict(key=9)
+validate_data_spec(ok_data, GreaterThanSpec) # raise Exception
 ```
 
 ## Test

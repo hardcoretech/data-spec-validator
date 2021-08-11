@@ -99,7 +99,7 @@ def _valid_spec_fields(data, fields, spec):
     return rs
 
 
-class DummyValidator(metaclass=BaseValidator):
+class DummyValidator(BaseValidator):
     name = DUMMY
 
     @staticmethod
@@ -107,7 +107,7 @@ class DummyValidator(metaclass=BaseValidator):
         raise NotImplementedError
 
 
-class IntValidator(metaclass=BaseValidator):
+class IntValidator(BaseValidator):
     name = INT
 
     @staticmethod
@@ -115,7 +115,7 @@ class IntValidator(metaclass=BaseValidator):
         return type(value) is int, TypeError(f'{value} is not a integer')
 
 
-class StrValidator(metaclass=BaseValidator):
+class StrValidator(BaseValidator):
     name = STR
 
     @staticmethod
@@ -123,7 +123,7 @@ class StrValidator(metaclass=BaseValidator):
         return type(value) is str, TypeError(f'{value} is not a string')
 
 
-class NoneValidator(metaclass=BaseValidator):
+class NoneValidator(BaseValidator):
     name = NONE
 
     @staticmethod
@@ -131,7 +131,7 @@ class NoneValidator(metaclass=BaseValidator):
         return value is None, TypeError(f'{value} is not None')
 
 
-class BoolValidator(metaclass=BaseValidator):
+class BoolValidator(BaseValidator):
     name = BOOL
 
     @staticmethod
@@ -139,7 +139,7 @@ class BoolValidator(metaclass=BaseValidator):
         return type(value) is bool, TypeError(f'{value} is not a boolean')
 
 
-class JSONValidator(metaclass=BaseValidator):
+class JSONValidator(BaseValidator):
     name = JSON
 
     @staticmethod
@@ -152,7 +152,7 @@ class JSONValidator(metaclass=BaseValidator):
         return ok, TypeError(f'{value} is not a json object')
 
 
-class JSONBoolValidator(metaclass=BaseValidator):
+class JSONBoolValidator(BaseValidator):
     name = JSON_BOOL
 
     @staticmethod
@@ -164,7 +164,7 @@ class JSONBoolValidator(metaclass=BaseValidator):
         return ok, TypeError(f'{value} is not a json boolean')
 
 
-class ListValidator(metaclass=BaseValidator):
+class ListValidator(BaseValidator):
     name = LIST
 
     @staticmethod
@@ -172,7 +172,7 @@ class ListValidator(metaclass=BaseValidator):
         return type(value) is list, TypeError(f'{value} is not a list')
 
 
-class DictValidator(metaclass=BaseValidator):
+class DictValidator(BaseValidator):
     name = DICT
 
     @staticmethod
@@ -180,7 +180,7 @@ class DictValidator(metaclass=BaseValidator):
         return type(value) is dict, TypeError(f'{value} is not a dict')
 
 
-class AmountValidator(metaclass=BaseValidator):
+class AmountValidator(BaseValidator):
     name = AMOUNT
 
     @staticmethod
@@ -192,7 +192,7 @@ class AmountValidator(metaclass=BaseValidator):
             return False, ValueError(f'Cannot convert {value} to float')
 
 
-class AmountRangeValidator(metaclass=BaseValidator):
+class AmountRangeValidator(BaseValidator):
     name = AMOUNT_RANGE
 
     @staticmethod
@@ -207,7 +207,7 @@ class AmountRangeValidator(metaclass=BaseValidator):
         return lower_bound <= float(value) <= upper_bound, ValueError(err_msg)
 
 
-class LengthValidator(metaclass=BaseValidator):
+class LengthValidator(BaseValidator):
     name = LENGTH
 
     @staticmethod
@@ -224,7 +224,7 @@ class LengthValidator(metaclass=BaseValidator):
         return lower_bound <= len(value), ValueError(err_msg)
 
 
-class SpecValidator(metaclass=BaseValidator):
+class SpecValidator(BaseValidator):
     name = SPEC
 
     @staticmethod
@@ -239,7 +239,7 @@ class SpecValidator(metaclass=BaseValidator):
         return ok, failures
 
 
-class ListOfValidator(metaclass=BaseValidator):
+class ListOfValidator(BaseValidator):
     name = LIST_OF
 
     @staticmethod
@@ -254,7 +254,7 @@ class ListOfValidator(metaclass=BaseValidator):
         return True, ''
 
 
-class OneOfValidator(metaclass=BaseValidator):
+class OneOfValidator(BaseValidator):
     name = ONE_OF
 
     @staticmethod
@@ -263,7 +263,7 @@ class OneOfValidator(metaclass=BaseValidator):
         return value in options, ValueError(f'{value} is not one of {options}')
 
 
-class OptionalValidator(metaclass=BaseValidator):
+class OptionalValidator(BaseValidator):
     name = OPTIONAL
 
     @staticmethod
@@ -271,7 +271,7 @@ class OptionalValidator(metaclass=BaseValidator):
         return isinstance(value, UnknownFieldValue), ValueError(f'{value} != UnknownFieldValue')
 
 
-class DecimalPlaceValidator(metaclass=BaseValidator):
+class DecimalPlaceValidator(BaseValidator):
     name = DECIMAL_PLACE
 
     @staticmethod
@@ -283,7 +283,7 @@ class DecimalPlaceValidator(metaclass=BaseValidator):
         return dv_dp <= dp_info, ValueError(f'Expect decimal places({dp_info}) for value: {value}, ' f'but got {dv_dp}')
 
 
-class DateValidator(metaclass=BaseValidator):
+class DateValidator(BaseValidator):
     name = DATE
 
     @staticmethod
@@ -295,7 +295,7 @@ class DateValidator(metaclass=BaseValidator):
             return False, ValueError(f'Unexpected date format: {value}')
 
 
-class DateRangeValidator(metaclass=BaseValidator):
+class DateRangeValidator(BaseValidator):
     name = DATE_RANGE
 
     @staticmethod
@@ -315,7 +315,7 @@ class DateRangeValidator(metaclass=BaseValidator):
         )
 
 
-class DigitStrValidator(metaclass=BaseValidator):
+class DigitStrValidator(BaseValidator):
     name = DIGIT_STR
 
     @staticmethod
@@ -323,7 +323,7 @@ class DigitStrValidator(metaclass=BaseValidator):
         return type(value) == str and value.isdigit(), TypeError(f'{value} is not a digit str')
 
 
-class AnyKeyExistsValidator(metaclass=BaseValidator):
+class AnyKeyExistsValidator(BaseValidator):
     name = ANY_KEY_EXISTS
 
     @staticmethod
@@ -332,7 +332,7 @@ class AnyKeyExistsValidator(metaclass=BaseValidator):
         return any(key in data for key in sibling_keys), ValueError(f'missing key in {sibling_keys} .')
 
 
-class KeyCoexistsValidator(metaclass=BaseValidator):
+class KeyCoexistsValidator(BaseValidator):
     name = KEY_COEXISTS
 
     @staticmethod
@@ -346,7 +346,7 @@ class KeyCoexistsValidator(metaclass=BaseValidator):
         )
 
 
-class EmailValidator(metaclass=BaseValidator):
+class EmailValidator(BaseValidator):
     name = EMAIL
 
     # https://stackoverflow.com/questions/201323/how-to-validate-an-email-address-using-a-regular-expression
@@ -359,7 +359,7 @@ class EmailValidator(metaclass=BaseValidator):
         )
 
 
-class UUIDValidator(metaclass=BaseValidator):
+class UUIDValidator(BaseValidator):
     name = UUID
 
     @staticmethod

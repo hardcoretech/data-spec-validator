@@ -1,5 +1,1 @@
-from .defines import EXIST
-
-__all__ = [
-    'EXIST',
-]
+from .defines import register

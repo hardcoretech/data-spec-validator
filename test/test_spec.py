@@ -31,12 +31,21 @@ from data_spec_validator.spec import (
     not_,
     validate_data_spec,
 )
+from data_spec_validator.spec.validators import BaseValidator
 
 
 def is_something_error(error, func, *args):
     try:
         func(*args)
     except error:
+        return True
+    return False
+
+
+def is_type_error(func, *args):
+    try:
+        func(*args)
+    except TypeError:
         return True
     return False
 
@@ -600,6 +609,69 @@ class TestSpec(unittest.TestCase):
 
         nok_data = dict(keys=['1', True, date(2000, 1, 1)])
         assert is_something_error(TypeError, validate_data_spec, nok_data, _get_list_of_non_bool_spec())
+
+
+class TestCustomSpec(unittest.TestCase):
+
+    def test_incorrect_validator_class(self):
+        some_check = 'some_check'
+
+        class InvalidClassValidator:
+            name = some_check
+
+            @staticmethod
+            def validate(value, extra, data):
+                return True, ValueError(f'{value} is not expected')
+
+        from data_spec_validator.spec import custom_spec
+        assert is_something_error(TypeError, custom_spec.register, dict(some_check=InvalidClassValidator()))
+
+    def test_validator_been_overwritten(self):
+        duplicate_check = 'd_check'
+
+        class AValidator(BaseValidator):
+            name = duplicate_check
+
+            @staticmethod
+            def validate(value, extra, data):
+                return False, ValueError(f'a value error')
+
+        class BValidator(BaseValidator):
+            name = duplicate_check
+
+            @staticmethod
+            def validate(value, extra, data):
+                return False, TypeError(f'a type error')
+
+        from data_spec_validator.spec import custom_spec
+        custom_spec.register(dict(duplicate_check=AValidator()))
+        is_type_error(custom_spec.register, dict(duplicate_check=BValidator()))
+
+    def test_custom_validator(self):
+        gt_check = 'gt_check'
+
+        class GreaterThanValidator(BaseValidator):
+            name = gt_check
+
+            @staticmethod
+            def validate(value, extra, data):
+                criteria = extra.get(GreaterThanValidator.name)
+                return value > criteria, ValueError(f'{value} is not greater than {criteria}')
+
+        from data_spec_validator.spec import custom_spec
+        custom_spec.register(dict(gt_check=GreaterThanValidator()))
+
+        def _get_gt_10_spec():
+            class GreaterThanSpec:
+                key = Checker([gt_check], extra={gt_check: 10})
+
+            return GreaterThanSpec
+
+        ok_data = dict(key=11)
+        assert validate_data_spec(ok_data, _get_gt_10_spec())
+
+        nok_data = dict(key=10)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_gt_10_spec())
 
 
 if __name__ == '__main__':

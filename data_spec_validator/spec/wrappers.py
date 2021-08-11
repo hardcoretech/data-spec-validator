@@ -6,7 +6,7 @@ class BaseWrapper:
         self.wrapped_func = wrapped_func
 
 
-class NotWrapper(BaseWrapper, metaclass=BaseValidator):
+class NotWrapper(BaseWrapper, BaseValidator):
     name = 'not'
 
     def validate(self, value, extra, data):
