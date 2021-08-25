@@ -23,6 +23,7 @@ from .defines import (
     NONE,
     ONE_OF,
     OPTIONAL,
+    REGEX,
     SELF,
     SPEC,
     STR,
