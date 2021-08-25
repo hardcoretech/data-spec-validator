@@ -22,6 +22,7 @@ from data_spec_validator.spec import (
     NONE,
     ONE_OF,
     OPTIONAL,
+    REGEX,
     SELF,
     SPEC,
     STR,
@@ -51,7 +52,6 @@ def is_type_error(func, *args):
 
 
 class TestSpec(unittest.TestCase):
-
     def test_int(self):
         def _get_int_spec():
             class IntSpec:
@@ -531,6 +531,290 @@ class TestSpec(unittest.TestCase):
         nok_data = dict(email_field="say@hello.world!")
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_email_spec())
 
+    def test_regex_validator(self):
+        # ^, $
+        def _get_symbol_spec1():
+            class SimpleRegexSpec1:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'^The')})
+
+            return SimpleRegexSpec1
+
+        def _get_symbol_spec2():
+            class SimpleRegexSpec2:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'of the world$')})
+
+            return SimpleRegexSpec2
+
+        def _get_symbol_spec3():
+            class SimpleRegexSpec3:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'^abc$')})
+
+            return SimpleRegexSpec3
+
+        def _get_symbol_spec4():
+            class SimpleRegexSpec4:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'notice')})
+
+            return SimpleRegexSpec4
+
+        ok_data = dict(re_field='The')
+        assert validate_data_spec(ok_data, _get_symbol_spec1())
+        nok_data = dict(re_field='That cat is cute')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec1())
+        nok_data = dict(re_field='I am the king of dogs')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec1())
+
+        ok_data = dict(re_field='of the world')
+        assert validate_data_spec(ok_data, _get_symbol_spec2())
+        nok_data = dict(re_field='I am the king of the world.')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec2())
+
+        ok_data = dict(re_field='abc')
+        assert validate_data_spec(ok_data, _get_symbol_spec3())
+        nok_data = dict(re_field='adcd')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec3())
+        nok_data = dict(re_field='adc')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec3())
+
+        ok_data = dict(re_field='Did you notice that')
+        assert validate_data_spec(ok_data, _get_symbol_spec4())
+        nok_data = dict(re_field='coffee, not iced please')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec4())
+
+        # ?, +, *,
+        def _get_symbol_spec5():
+            class SimpleRegexSpec5:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab*')})
+
+            return SimpleRegexSpec5
+
+        def _get_symbol_spec6():
+            class SimpleRegexSpec6:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab+')})
+
+            return SimpleRegexSpec6
+
+        def _get_symbol_spec7():
+            class SimpleRegexSpec7:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab?')})
+
+            return SimpleRegexSpec7
+
+        def _get_symbol_spec8():
+            class SimpleRegexSpec8:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'a?b+$')})
+
+            return SimpleRegexSpec8
+
+        ok_data = dict(re_field='ac')
+        assert validate_data_spec(ok_data, _get_symbol_spec5())
+        ok_data = dict(re_field='ab')
+        assert validate_data_spec(ok_data, _get_symbol_spec5())
+        ok_data = dict(re_field='abbc')
+        assert validate_data_spec(ok_data, _get_symbol_spec5())
+        nok_data = dict(re_field='b')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec5())
+
+        ok_data = dict(re_field='ab')
+        assert validate_data_spec(ok_data, _get_symbol_spec6())
+        ok_data = dict(re_field='abbc')
+        assert validate_data_spec(ok_data, _get_symbol_spec6())
+        nok_data = dict(re_field='ac')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec6())
+
+        ok_data = dict(re_field='ac')
+        assert validate_data_spec(ok_data, _get_symbol_spec7())
+        ok_data = dict(re_field='ab')
+        assert validate_data_spec(ok_data, _get_symbol_spec7())
+        ok_data = dict(re_field='abbc')
+        assert validate_data_spec(ok_data, _get_symbol_spec7())
+        nok_data = dict(re_field='bc')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec7())
+
+        ok_data = dict(re_field='ab')
+        assert validate_data_spec(ok_data, _get_symbol_spec8())
+        ok_data = dict(re_field='abb')
+        assert validate_data_spec(ok_data, _get_symbol_spec8())
+        ok_data = dict(re_field='b')
+        assert validate_data_spec(ok_data, _get_symbol_spec8())
+        ok_data = dict(re_field='bb')
+        assert validate_data_spec(ok_data, _get_symbol_spec8())
+        nok_data = dict(re_field='aac')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec8())
+        nok_data = dict(re_field='ba')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec8())
+
+        # {}
+        def _get_symbol_spec9():
+            class SimpleRegexSpec9:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab{2}')})
+
+            return SimpleRegexSpec9
+
+        def _get_symbol_spec10():
+            class SimpleRegexSpec10:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab{3,5}')})
+
+            return SimpleRegexSpec10
+
+        ok_data = dict(re_field='abb')
+        assert validate_data_spec(ok_data, _get_symbol_spec9())
+        ok_data = dict(re_field='abcabbc')
+        assert validate_data_spec(ok_data, _get_symbol_spec9())
+        nok_data = dict(re_field='ab')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec9())
+
+        ok_data = dict(re_field='abbb')
+        assert validate_data_spec(ok_data, _get_symbol_spec10())
+        ok_data = dict(re_field='abbabbbb')
+        assert validate_data_spec(ok_data, _get_symbol_spec10())
+        nok_data = dict(re_field='abbabb')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec10())
+
+        # |, ()
+        def _get_symbol_spec11():
+            class SimpleRegexSpec11:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'hello|world')})
+
+            return SimpleRegexSpec11
+
+        def _get_symbol_spec12():
+            class SimpleRegexSpec12:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'(a|bc)de')})
+
+            return SimpleRegexSpec12
+
+        def _get_symbol_spec13():
+            class SimpleRegexSpec13:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'(a|b)*c')})
+
+            return SimpleRegexSpec13
+
+        ok_data = dict(re_field='hello, hi')
+        assert validate_data_spec(ok_data, _get_symbol_spec11())
+        ok_data = dict(re_field='new world')
+        assert validate_data_spec(ok_data, _get_symbol_spec11())
+        nok_data = dict(re_field='hell, word')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec11())
+
+        ok_data = dict(re_field='ade')
+        assert validate_data_spec(ok_data, _get_symbol_spec12())
+        ok_data = dict(re_field='bcde')
+        assert validate_data_spec(ok_data, _get_symbol_spec12())
+        nok_data = dict(re_field='adbce')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec12())
+
+        ok_data = dict(re_field='c')
+        assert validate_data_spec(ok_data, _get_symbol_spec13())
+        ok_data = dict(re_field='acb')
+        assert validate_data_spec(ok_data, _get_symbol_spec13())
+        ok_data = dict(re_field='ebcd')
+        assert validate_data_spec(ok_data, _get_symbol_spec13())
+        nok_data = dict(re_field='ab')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec13())
+
+        # ., []
+        def _get_symbol_spec14():
+            class SimpleRegexSpec14:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'a.[0-9]')})
+
+            return SimpleRegexSpec14
+
+        def _get_symbol_spec15():
+            class SimpleRegexSpec15:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'^.{3}$')})
+
+            return SimpleRegexSpec15
+
+        def _get_symbol_spec16():
+            class SimpleRegexSpec16:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'[a-c]')})
+
+            return SimpleRegexSpec16
+
+        def _get_symbol_spec17():
+            class SimpleRegexSpec17:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'[0-9]%')})
+
+            return SimpleRegexSpec17
+
+        def _get_symbol_spec18():
+            class SimpleRegexSpec18:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r',[a-zA-Z0-9]$')})
+
+            return SimpleRegexSpec18
+
+        ok_data = dict(re_field='a33')
+        assert validate_data_spec(ok_data, _get_symbol_spec14())
+        ok_data = dict(re_field='a.0')
+        assert validate_data_spec(ok_data, _get_symbol_spec14())
+        ok_data = dict(re_field='a@9')
+        assert validate_data_spec(ok_data, _get_symbol_spec14())
+        nok_data = dict(re_field='a8')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec14())
+        nok_data = dict(re_field='a.a')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec14())
+
+        ok_data = dict(re_field=',3c')
+        assert validate_data_spec(ok_data, _get_symbol_spec15())
+        nok_data = dict(re_field='12')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec15())
+        nok_data = dict(re_field='abcd')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec15())
+
+        ok_data = dict(re_field='12a3c')
+        assert validate_data_spec(ok_data, _get_symbol_spec16())
+        ok_data = dict(re_field='ab')
+        assert validate_data_spec(ok_data, _get_symbol_spec16())
+        nok_data = dict(re_field='de')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec16())
+
+        ok_data = dict(re_field='18%')
+        assert validate_data_spec(ok_data, _get_symbol_spec17())
+        nok_data = dict(re_field='a%')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec17())
+
+        ok_data = dict(re_field=',1')
+        assert validate_data_spec(ok_data, _get_symbol_spec18())
+        ok_data = dict(re_field=',G')
+        assert validate_data_spec(ok_data, _get_symbol_spec18())
+        nok_data = dict(re_field=',end')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec18())
+
+    def test_regex_match_method_validator(self):
+        def _get_search_spec():
+            class SearchRegexSpec:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'watch out')})
+
+            return SearchRegexSpec
+
+        def _get_match_spec():
+            class MatchRegexSpec:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'watch out', method='match')})
+
+            return MatchRegexSpec
+
+        def _get_fullmatch_spec():
+            class FullmatchRegexSpec:
+                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'watch out', method='fullmatch')})
+
+            return FullmatchRegexSpec
+
+        ok_data = dict(re_field='someone tell me to watch out.')
+        assert validate_data_spec(ok_data, _get_search_spec())
+        nok_data = dict(re_field='someone tell me')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_search_spec())
+
+        ok_data = dict(re_field='watch out, it is close!')
+        assert validate_data_spec(ok_data, _get_match_spec())
+        nok_data = dict(re_field='someone tell me to watch out.')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_match_spec())
+
+        ok_data = dict(re_field='watch out')
+        assert validate_data_spec(ok_data, _get_fullmatch_spec())
+        nok_data = dict(re_field='watch out, it is close!')
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_fullmatch_spec())
+
     def test_uuid(self):
         def _get_uuid_spec():
             class UuidSpec:
@@ -612,7 +896,6 @@ class TestSpec(unittest.TestCase):
 
 
 class TestCustomSpec(unittest.TestCase):
-
     def test_incorrect_validator_class(self):
         some_check = 'some_check'
 
@@ -624,6 +907,7 @@ class TestCustomSpec(unittest.TestCase):
                 return True, ValueError(f'{value} is not expected')
 
         from data_spec_validator.spec import custom_spec
+
         assert is_something_error(TypeError, custom_spec.register, dict(some_check=InvalidClassValidator()))
 
     def test_validator_been_overwritten(self):
@@ -634,16 +918,17 @@ class TestCustomSpec(unittest.TestCase):
 
             @staticmethod
             def validate(value, extra, data):
-                return False, ValueError(f'a value error')
+                return False, ValueError('a value error')
 
         class BValidator(BaseValidator):
             name = duplicate_check
 
             @staticmethod
             def validate(value, extra, data):
-                return False, TypeError(f'a type error')
+                return False, TypeError('a type error')
 
         from data_spec_validator.spec import custom_spec
+
         custom_spec.register(dict(duplicate_check=AValidator()))
         is_type_error(custom_spec.register, dict(duplicate_check=BValidator()))
 
@@ -659,6 +944,7 @@ class TestCustomSpec(unittest.TestCase):
                 return value > criteria, ValueError(f'{value} is not greater than {criteria}')
 
         from data_spec_validator.spec import custom_spec
+
         custom_spec.register(dict(gt_check=GreaterThanValidator()))
 
         def _get_gt_10_spec():

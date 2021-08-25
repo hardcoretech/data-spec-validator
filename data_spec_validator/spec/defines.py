@@ -30,6 +30,7 @@ ANY_KEY_EXISTS = 'any_key_exists'
 KEY_COEXISTS = 'key_coexists'
 EMAIL = 'email'
 UUID = 'uuid'
+REGEX = 'regex'
 
 # Wrapper prefix
 _wrapper_splitter = '-'
@@ -63,6 +64,7 @@ def get_default_check_2_validator_map():
         NoneValidator,
         OneOfValidator,
         OptionalValidator,
+        RegexValidator,
         SpecValidator,
         StrValidator,
         UUIDValidator,
@@ -93,6 +95,7 @@ def get_default_check_2_validator_map():
         KEY_COEXISTS: KeyCoexistsValidator(),
         EMAIL: EmailValidator(),
         UUID: UUIDValidator(),
+        REGEX: RegexValidator(),
     }
 
 

@@ -27,6 +27,7 @@ from .defines import (
     NONE,
     ONE_OF,
     OPTIONAL,
+    REGEX,
     SELF,
     SPEC,
     STR,
@@ -147,7 +148,7 @@ class JSONValidator(BaseValidator):
         try:
             json.loads(value)
             ok = True
-        except:
+        except Exception:
             ok = False
         return ok, TypeError(f'{value} is not a json object')
 
@@ -159,7 +160,7 @@ class JSONBoolValidator(BaseValidator):
     def validate(value, extra, data):
         try:
             ok = type(json.loads(value)) is bool
-        except:
+        except Exception:
             ok = False
         return ok, TypeError(f'{value} is not a json boolean')
 
@@ -367,6 +368,30 @@ class UUIDValidator(BaseValidator):
         try:
             uuid.UUID(value)
             ok = True
-        except:
+        except Exception:
             ok = False
         return ok, ValueError(f'{value} is not an UUID object')
+
+
+class RegexValidator(BaseValidator):
+    name = REGEX
+
+    @staticmethod
+    def validate(value, extra, data):
+        regex_param = extra.get(RegexValidator.name, {})
+        pattern = regex_param.get('pattern', '')
+        match_method = regex_param.get('method', 'search')
+        error_regex_param = regex_param.copy()
+        if 'method' not in regex_param:
+            error_regex_param['method'] = 'search'
+
+        if match_method == 'match':
+            match_func = re.match
+        elif match_method == 'fullmatch':
+            match_func = re.fullmatch
+        else:
+            match_func = re.search
+
+        return type(value) == str and match_func(pattern, value), ValueError(
+            f'"{value}" does not match "{error_regex_param}"'
+        )
