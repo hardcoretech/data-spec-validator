@@ -389,8 +389,10 @@ class RegexValidator(BaseValidator):
             match_func = re.match
         elif match_method == 'fullmatch':
             match_func = re.fullmatch
-        else:
+        elif match_method == 'search':
             match_func = re.search
+        else:
+            assert False, 'unsupported match method'
 
         return type(value) == str and match_func(pattern, value), ValueError(
             f'"{value}" does not match "{error_regex_param}"'
