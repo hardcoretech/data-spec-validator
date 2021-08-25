@@ -1,0 +1,14 @@
+# Add to ignored commit here
+# Linting       #
+#################
+# Run "end-of-file-fixer", "trailing-whitespace"
+
+# Run "autoflake"
+
+# Run "isort"
+
+# Run "black"
+
+# Run pre-commit on missed files
+
+# Run "prettier"
