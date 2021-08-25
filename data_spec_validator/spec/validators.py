@@ -382,8 +382,7 @@ class RegexValidator(BaseValidator):
         pattern = regex_param.get('pattern', '')
         match_method = regex_param.get('method', 'search')
         error_regex_param = regex_param.copy()
-        if 'method' not in regex_param:
-            error_regex_param['method'] = 'search'
+        error_regex_param['method'] = match_method
 
         if match_method == 'match':
             match_func = re.match
