@@ -1,1 +1,1 @@
-from .decorators import data_spec_validation
+from .decorators import dsv

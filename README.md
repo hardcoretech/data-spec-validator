@@ -28,6 +28,17 @@ def do_something(params):
     # do something actually
 ```
 
+## Installation
+- Basic usage:
+```shell
+pip install data-spec-validator
+```
+- Advance usage (decorator)
+  1. The decorator function `dsv` depends on `Django` & `djangorestframework`.
+```shell
+pip install data-spec-validator[decorator]
+```
+
 ## Quick Example
 * Do `validate_data_spec` directly wherever you like (see `test_spect.py` for more)
 ```python
@@ -60,13 +71,13 @@ validate_data_spec(another_data, AnotherSpec) # raise Exception
 ```
 
 
-* Decorate a method with `data_spec_validation`, the method must meet one of the following requirements.
+* Decorate a method with `dsv`, the method must meet one of the following requirements.
     1) Has a WSGIRequest(`django.core.handlers.wsgi.WSGIRequest`) attribute.
     2) The 2nd argument of the method is a `rest_framework.request.Request` instance.
 ```python
 from rest_framework.views import APIView
 
-from data_spec_validator.decorator import data_spec_validation
+from data_spec_validator.decorator import dsv
 from data_spec_validator.spec import UUID, EMAIL, Checker
 
 class SomeViewSpec:
@@ -74,7 +85,7 @@ class SomeViewSpec:
   param_b = Checker([EMAIL])
 
 class SomeView(APIView):
-    @data_spec_validation(SomeViewSpec)
+    @dsv(SomeViewSpec)
     def get(self, request):
         pass
 ```
