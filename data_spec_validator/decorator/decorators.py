@@ -20,7 +20,7 @@ def _is_view(obj):
 
 
 def _extract_request_info(req, **kwargs):
-    assert isinstance(req, WSGIRequest) or isinstance(req, Request)
+    assert _is_request(req), f'Unsupported req type, {type(req)}'
 
     def combine_params(_data, params):
         assert not (set(_data.keys()) & set(params.keys())), 'Data and URL named param have conflict'
@@ -37,6 +37,8 @@ def _extract_request_info(req, **kwargs):
         data = req.GET if req.method == 'GET' else req.POST
     elif isinstance(req, Request):
         data = req.query_params if req.method == 'GET' else req.data
+    else:
+        assert False, 'Unexpected error here'
 
     # Named URL parameters should consider as params of the data spec.
     if type(data) == list:
@@ -64,7 +66,11 @@ def dsv(spec):
             if _is_request(obj):
                 data = _extract_request_info(obj, **kwargs)
             elif _is_view(obj):
-                req = obj.request if hasattr(obj, 'request') and isinstance(obj.request, WSGIRequest) else args[1]
+                if hasattr(obj, 'request') and isinstance(obj.request, WSGIRequest):
+                    req = obj.request
+                else:
+                    assert len(args) >= 2, 'The decorated function must have at least 2 arguments'
+                    req = args[1]
                 data = _extract_request_info(req, **kwargs)
             else:
                 assert False, 'Unexpected usage'
