@@ -22,7 +22,6 @@ from .defines import (
     LIST_OF,
     NONE,
     ONE_OF,
-    OPTIONAL,
     REGEX,
     SELF,
     SPEC,

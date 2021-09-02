@@ -21,7 +21,6 @@ AMOUNT = 'amount'
 AMOUNT_RANGE = 'amount_range'
 LENGTH = 'length'
 DECIMAL_PLACE = 'decimal_place'
-OPTIONAL = 'optional'
 SPEC = 'spec'
 LIST_OF = 'list_of'
 ONE_OF = 'one_of'
@@ -63,7 +62,6 @@ def get_default_check_2_validator_map():
         ListValidator,
         NoneValidator,
         OneOfValidator,
-        OptionalValidator,
         RegexValidator,
         SpecValidator,
         StrValidator,
@@ -81,7 +79,6 @@ def get_default_check_2_validator_map():
         JSON: JSONValidator(),
         JSON_BOOL: JSONBoolValidator(),
         ONE_OF: OneOfValidator(),
-        OPTIONAL: OptionalValidator(),
         SPEC: SpecValidator(),
         LIST_OF: ListOfValidator(),
         LENGTH: LengthValidator(),
@@ -165,7 +162,33 @@ class CheckerOP(Enum):
 
 
 class Checker:
-    def __init__(self, checks, op=CheckerOP.ALL, extra=None):
-        self.checks = checks
-        self.op = op
+    def __init__(self, checks, optional=False, op=CheckerOP.ALL, extra=None):
+        """
+        checks: list of str(Check)
+        optional: boolean
+                  Set optional to True, the validation process will be passed if the field is absent
+        op: CheckerOP
+        extra: None or Dict
+        """
+        self.checks = checks or []
+        self._op = op
+        self._optional = optional
         self.extra = extra or {}
+
+        self._ensure()
+
+    def _ensure(self):
+        if self._optional and len(self.checks) == 0:
+            raise ValueError('Require at least 1 check when set optional to True')
+
+    @property
+    def allow_optional(self):
+        return self._optional
+
+    @property
+    def is_op_any(self):
+        return self._op == CheckerOP.ANY
+
+    @property
+    def is_op_all(self):
+        return self._op == CheckerOP.ALL

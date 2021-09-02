@@ -26,27 +26,17 @@ from .defines import (
     LIST_OF,
     NONE,
     ONE_OF,
-    OPTIONAL,
     REGEX,
     SELF,
     SPEC,
     STR,
     UUID,
     BaseValidator,
-    CheckerOP,
     UnknownFieldValue,
     ValidateResult,
     get_unknown_field_value,
     get_validator,
 )
-
-
-def _is_checker_op_all(op):
-    return op == CheckerOP.ALL
-
-
-def _is_checker_op_any(op):
-    return op == CheckerOP.ANY
 
 
 def _extract_fields(checker):
@@ -56,7 +46,6 @@ def _extract_fields(checker):
 def _valid_spec_field(data, field, spec):
     checker = getattr(spec, field)
 
-    op = checker.op
     checks = checker.checks
     extra = checker.extra
 
@@ -72,25 +61,29 @@ def _valid_spec_field(data, field, spec):
         value = data.get(field, get_unknown_field_value())
 
     results = []
-    for check in checks:
-        validator = get_validator(check)
-        try:
-            ok, error = validator.validate(value, extra, data)
-        except AttributeError as ae:
-            if check == LIST_OF:
-                # During list_of check, the target should be one kind of spec.
-                ok, error = False, TypeError(f'{value} is not a spec of {spec}, detail: {ae}')
-            else:
-                ok, error = False, RuntimeError(f'{ae}')
-        except Exception as e:
-            # For any unwell-handled case, go this way for now.
-            ok, error = False, RuntimeError(f'{e}')
-        results.append((ok, ValidateResult(spec, field, check, error)))
+    if value == get_unknown_field_value() and checker.allow_optional:
+        # Pass the checker's validation directly
+        pass
+    else:
+        for check in checks:
+            validator = get_validator(check)
+            try:
+                ok, error = validator.validate(value, extra, data)
+            except AttributeError as ae:
+                if check == LIST_OF:
+                    # During list_of check, the target should be one kind of spec.
+                    ok, error = False, TypeError(f'{value} is not a spec of {spec}, detail: {ae}')
+                else:
+                    ok, error = False, RuntimeError(f'{ae}')
+            except Exception as e:
+                # For any unwell-handled case, go this way for now.
+                ok, error = False, RuntimeError(f'{e}')
+            results.append((ok, ValidateResult(spec, field, check, error)))
 
     nok_results = [rs for (ok, rs) in results if not ok]
-    if _is_checker_op_any(op) and len(nok_results) == len(checks):
+    if checker.is_op_any and len(nok_results) == len(checks):
         return False, nok_results
-    if _is_checker_op_all(op) and nok_results:
+    if checker.is_op_all and nok_results:
         return False, nok_results
     return True, []
 
@@ -262,14 +255,6 @@ class OneOfValidator(BaseValidator):
     def validate(value, extra, data):
         options = extra.get(OneOfValidator.name)
         return value in options, ValueError(f'{value} is not one of {options}')
-
-
-class OptionalValidator(BaseValidator):
-    name = OPTIONAL
-
-    @staticmethod
-    def validate(value, extra, data):
-        return isinstance(value, UnknownFieldValue), ValueError(f'{value} != UnknownFieldValue')
 
 
 class DecimalPlaceValidator(BaseValidator):

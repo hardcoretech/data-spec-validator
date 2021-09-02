@@ -21,7 +21,6 @@ from data_spec_validator.spec import (
     LIST_OF,
     NONE,
     ONE_OF,
-    OPTIONAL,
     REGEX,
     SELF,
     SPEC,
@@ -107,8 +106,8 @@ class TestSpec(unittest.TestCase):
     def test_self(self):
         def _get_self_spec():
             class SelfSpec:
-                next_field = Checker([SPEC, OPTIONAL], op=CheckerOP.ANY, extra={SPEC: SELF})
-                children = Checker([LIST_OF, OPTIONAL], op=CheckerOP.ANY, extra={LIST_OF: SPEC, SPEC: SELF})
+                next_field = Checker([SPEC], optional=True, extra={SPEC: SELF})
+                children = Checker([LIST_OF], optional=True, extra={LIST_OF: SPEC, SPEC: SELF})
 
             return SelfSpec
 
@@ -133,7 +132,7 @@ class TestSpec(unittest.TestCase):
         assert validate_data_spec(ok_data, _get_self_spec())
 
         nok_data = dict(next_field=dict(next_field=0))
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_self_spec())
+        assert is_something_error(Exception, validate_data_spec, nok_data, _get_self_spec())
 
     def test_list(self):
         def _get_list_spec():
@@ -164,15 +163,12 @@ class TestSpec(unittest.TestCase):
     def test_optional(self):
         def _get_optional_spec():
             class OptionalSpec:
-                optional_field = Checker([OPTIONAL])
+                optional_field = Checker([STR], optional=True)
 
             return OptionalSpec
 
         ok_data = dict(whatever_field='dont_care')
         assert validate_data_spec(ok_data, _get_optional_spec())
-
-        nok_data = dict(optional_field='must_be_validated_by_another_check')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_optional_spec())
 
     def test_amount(self):
         def _get_amount_spec():
@@ -487,7 +483,7 @@ class TestSpec(unittest.TestCase):
     def test_op_any(self):
         def _get_any_spec():
             class AnySpec:
-                any_field = Checker([OPTIONAL, INT, STR], op=CheckerOP.ANY)
+                any_field = Checker([INT, STR], optional=True, op=CheckerOP.ANY)
 
             return AnySpec
 
