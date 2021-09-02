@@ -42,22 +42,26 @@ pip install data-spec-validator[decorator]
 ## Quick Example
 * Do `validate_data_spec` directly wherever you like (see `test_spect.py` for more)
 ```python
-from data_spec_validator.spec import INT, DIGIT_STR, ONE_OF, OPTIONAL, Checker, CheckerOP, validate_data_spec
+from data_spec_validator.spec import INT, DIGIT_STR, ONE_OF, Checker, CheckerOP, validate_data_spec
 
 class SomeSpec:
     field_a = Checker([INT])
-    field_b = Checker([DIGIT_STR, OPTIONAL], op=CheckerOP.ANY)
+    field_b = Checker([DIGIT_STR], optional=True)
+    field_c = Checker([DIGIT_STR, INT], op=CheckerOP.ANY)
 
-some_data = dict(field_a=3, field_b='4', field_c=[1,2])
+some_data = dict(field_a=4, field_b='3', field_c=1, field_dont_care=[5,6])
 validate_data_spec(some_data, SomeSpec) # return True
 
-some_data = dict(field_a=4)
+some_data = dict(field_a=4, field_c='1')
 validate_data_spec(some_data, SomeSpec) # return True
 
-some_data = dict(field_a='3')
+some_data = dict(field_a=4, field_c=1)
+validate_data_spec(some_data, SomeSpec) # return True
+
+some_data = dict(field_a='4', field_c='1')
 validate_data_spec(some_data, SomeSpec) # raise Exception
 
-some_data = dict(field_a='3')
+some_data = dict(field_a='4', field_c='1')
 validate_data_spec(some_data, SomeSpec, nothrow=True) # return False
 
 class AnotherSpec:
@@ -72,9 +76,11 @@ validate_data_spec(another_data, AnotherSpec) # raise Exception
 
 
 * Decorate a method with `dsv`, the method must meet one of the following requirements.
-    1) Has a WSGIRequest(`django.core.handlers.wsgi.WSGIRequest`) attribute.
-    2) The 2nd argument of the method is a `rest_framework.request.Request` instance.
+    1) It's a view's member function, and the view has a WSGIRequest(`django.core.handlers.wsgi.WSGIRequest`) attribute.
+    2) It's a view's member function, and the 2nd argument of the method is a `rest_framework.request.Request` instance.
+    3) It's already decorated with `rest_framework.decorators import api_view`, the 1st argument is a `rest_framework.request.Request`
 ```python
+from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 
 from data_spec_validator.decorator import dsv
@@ -88,6 +94,11 @@ class SomeView(APIView):
     @dsv(SomeViewSpec)
     def get(self, request):
         pass
+
+@api_view(('POST',))
+@dsv(SomeViewSpec)
+def customer_create(request):
+    pass
 ```
 
 ### Register Custom Spec Check & Validator
