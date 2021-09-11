@@ -39,6 +39,11 @@ from .defines import (
 )
 
 
+def _raise_if_condition(condition, message, error_cls=RuntimeError):
+    if condition:
+        raise error_cls(message)
+
+
 def _extract_fields(checker):
     return list(filter(lambda f: type(f) == str and not (f.startswith('__') and f.endswith('__')), dir(checker)))
 
@@ -192,7 +197,10 @@ class AmountRangeValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data):
         amount_range_info = extra.get(AmountRangeValidator.name)
-        assert type(amount_range_info) == dict and ('min' in amount_range_info or 'max' in amount_range_info)
+        _raise_if_condition(
+            type(amount_range_info) != dict or ('min' not in amount_range_info and 'max' not in amount_range_info),
+            f'Invalid extra configuration: {extra}',
+        )
 
         lower_bound = amount_range_info.get('min', float('-inf'))
         upper_bound = amount_range_info.get('max', float('inf'))
@@ -207,10 +215,16 @@ class LengthValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data):
         length_info = extra.get(LengthValidator.name)
-        assert type(length_info) == dict and ('min' in length_info or 'max' in length_info)
+        _raise_if_condition(
+            type(length_info) != dict or ('min' not in length_info and 'max' not in length_info),
+            f'Invalid extra configuration: {extra}',
+        )
 
         lower_bound, upper_bound = length_info.get('min', 1), length_info.get('max')
-        assert lower_bound >= 1, 'Make no sense, min is less than 1 for length validator'
+        _raise_if_condition(
+            lower_bound < 1,
+            'Lower boundary is less than 1 for length validator',
+        )
 
         err_msg = f'Length of {value} is not in between {length_info}'
         if upper_bound:
@@ -287,11 +301,17 @@ class DateRangeValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data):
         range_info = extra.get(DateRangeValidator.name)
-        assert type(range_info) == dict and ('min' in range_info or 'max' in range_info)
+        _raise_if_condition(
+            type(range_info) != dict or ('min' not in range_info and 'max' not in range_info),
+            f'Invalid extra configuration: {extra}',
+        )
 
         min_date_str = range_info.get('min', '1970-01-01')
         max_date_str = range_info.get('max', '2999-12-31')
-        assert type(min_date_str) == str and type(max_date_str) == str
+        _raise_if_condition(
+            type(min_date_str) != str or type(max_date_str) != str,
+            f'Invalid extra configuration(must be str): {extra}',
+        )
 
         min_date = dateutil.parser.parse(min_date_str).date()
         max_date = dateutil.parser.parse(max_date_str).date()
@@ -376,7 +396,7 @@ class RegexValidator(BaseValidator):
         elif match_method == 'search':
             match_func = re.search
         else:
-            assert False, 'unsupported match method'
+            _raise_if_condition(True, f'unsupported match method: {match_method}')
 
         return type(value) == str and match_func(pattern, value), ValueError(
             f'"{value}" does not match "{error_regex_param}"'
