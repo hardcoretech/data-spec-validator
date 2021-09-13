@@ -101,6 +101,8 @@ def customer_create(request):
     pass
 ```
 
+* Decorate another method with `dsv_request_meta` can help you validate the META in request header.
+
 ### Register Custom Spec Check & Validator
 - Define custom CHECK constant (`gt_check` in this case) and write custom Validator(`GreaterThanValidator` in this case)
 ```python
