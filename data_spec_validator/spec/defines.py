@@ -96,7 +96,6 @@ def get_default_check_2_validator_map():
     }
 
 
-@lru_cache(1)
 def _get_wrapper_cls_map():
     from .wrappers import NotWrapper
 
@@ -105,7 +104,6 @@ def _get_wrapper_cls_map():
     }
 
 
-@lru_cache(1)
 def _get_check_2_validator_map():
     from .custom_spec.defines import get_custom_check_2_validator_map
 

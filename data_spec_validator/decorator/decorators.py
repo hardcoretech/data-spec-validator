@@ -19,11 +19,11 @@ def _is_view(obj):
     return issubclass(type(obj), View)
 
 
-def _extract_request_info(req, **kwargs):
-    assert _is_request(req), f'Unsupported req type, {type(req)}'
-
+def _combine_named_params(data, **kwargs):
     def combine_params(_data, params):
-        assert not (set(_data.keys()) & set(params.keys())), 'Data and URL named param have conflict'
+        if set(_data.keys()) & set(params.keys()):
+            raise RuntimeError('Data and URL named param have conflict')
+
         if isinstance(_data, QueryDict):
             qd = QueryDict(mutable=True)
             qd.update(_data)
@@ -32,21 +32,70 @@ def _extract_request_info(req, **kwargs):
 
         return {**_data, **params}
 
-    if isinstance(req, WSGIRequest):
-        assert req.method in ['GET', 'POST']
-        data = req.GET if req.method == 'GET' else req.POST
-    elif isinstance(req, Request):
-        data = req.query_params if req.method == 'GET' else req.data
-    else:
-        assert False, 'Unexpected error here'
-
     # Named URL parameters should consider as params of the data spec.
     if type(data) == list:
         data = [combine_params(datum, kwargs) for datum in data]
     else:
         data = combine_params(data, kwargs)
-
     return data
+
+
+def _extract_request_meta(req, **kwargs):
+    if isinstance(req, WSGIRequest) or isinstance(req, Request):
+        data = req.META
+    else:
+        raise Exception(f'Unsupported req type, {type(req)}')
+
+    return _combine_named_params(data, **kwargs)
+
+
+def _extract_request_param_data(req, **kwargs):
+    if isinstance(req, WSGIRequest):
+        if req.method not in ['GET', 'POST']:
+            raise Exception(f'Disallowed method {req.method}')
+        data = req.GET if req.method == 'GET' else req.POST
+    elif isinstance(req, Request):
+        data = req.query_params if req.method == 'GET' else req.data
+    else:
+        raise Exception(f'Unsupported req type, {type(req)}')
+
+    return _combine_named_params(data, **kwargs)
+
+
+def _extract_request(*args):
+    obj = args[0]
+    if _is_request(obj):
+        return obj
+    elif _is_view(obj):
+        if hasattr(obj, 'request') and isinstance(obj.request, WSGIRequest):
+            req = obj.request
+        else:
+            if len(args) < 2:
+                raise Exception('The decorated function must have at least 2 arguments')
+            req = args[1]
+        return req
+    else:
+        raise Exception('Unexpected usage')
+
+
+def _do_validate(data, spec):
+    # Raise DRF's exception to let DRF's exception handler do something about it.
+    error = None
+    try:
+        if type(data) == list:
+            for datum in data:
+                validate_data_spec(datum, spec)
+        else:
+            validate_data_spec(data, spec)
+    except ValueError as value_err:
+        error = drf_exceptions.ValidationError(str(value_err.args))
+    except PermissionError as perm_err:
+        error = drf_exceptions.PermissionDenied(str(perm_err.args))
+    except (TypeError, RuntimeError) as parse_err:
+        error = drf_exceptions.ParseError(str(parse_err.args))
+
+    if error:
+        raise error
 
 
 def dsv(spec):
@@ -61,38 +110,23 @@ def dsv(spec):
     def wrapper(func):
         @wraps(func)
         def wrapped(*args, **kwargs):
+            req = _extract_request(*args)
+            data = _extract_request_param_data(req, **kwargs)
+            _do_validate(data, spec)
+            return func(*args, **kwargs)
 
-            obj = args[0]
-            if _is_request(obj):
-                data = _extract_request_info(obj, **kwargs)
-            elif _is_view(obj):
-                if hasattr(obj, 'request') and isinstance(obj.request, WSGIRequest):
-                    req = obj.request
-                else:
-                    assert len(args) >= 2, 'The decorated function must have at least 2 arguments'
-                    req = args[1]
-                data = _extract_request_info(req, **kwargs)
-            else:
-                assert False, 'Unexpected usage'
+        return wrapped
 
-            # Raise DRF's exception to let DRF's exception handler do something about it.
-            error = None
-            try:
-                if type(data) == list:
-                    for datum in data:
-                        validate_data_spec(datum, spec)
-                else:
-                    validate_data_spec(data, spec)
-            except ValueError as value_err:
-                error = drf_exceptions.ValidationError(str(value_err.args))
-            except PermissionError as perm_err:
-                error = drf_exceptions.PermissionDenied(str(perm_err.args))
-            except (TypeError, RuntimeError) as parse_err:
-                error = drf_exceptions.ParseError(str(parse_err.args))
+    return wrapper
 
-            if error:
-                raise error
 
+def dsv_request_meta(spec):
+    def wrapper(func):
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            req = _extract_request(*args)
+            meta = _extract_request_meta(req, **kwargs)
+            _do_validate(meta, spec)
             return func(*args, **kwargs)
 
         return wrapped

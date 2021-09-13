@@ -8,7 +8,8 @@ def _wrap_error_with_field_info(failure):
 
 
 def _flatten_results(failures, errors=None):
-    assert type(errors) == list
+    if type(errors) != list:
+        raise RuntimeError(f'{errors} not a list')
 
     if type(failures) == tuple:
         _flatten_results(failures[1], errors)
