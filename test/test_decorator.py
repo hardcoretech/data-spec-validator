@@ -1,3 +1,4 @@
+import itertools
 import unittest
 from io import StringIO
 
@@ -95,18 +96,7 @@ class TestDSV(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             view.decorated_func(req, named_arg='')
 
-    @parameterized.expand(
-        [
-            (dsv, Request, 'GET'),
-            (dsv, Request, 'POST'),
-            (dsv, WSGIRequest, 'GET'),
-            (dsv, WSGIRequest, 'POST'),
-            (dsv_request_meta, Request, 'GET'),
-            (dsv_request_meta, Request, 'POST'),
-            (dsv_request_meta, WSGIRequest, 'GET'),
-            (dsv_request_meta, WSGIRequest, 'POST'),
-        ]
-    )
+    @parameterized.expand(itertools.product([dsv, dsv_request_meta], [Request, WSGIRequest], ['GET', 'POST']))
     def test_data_and_path_named_param_should_combine_together(self, dsv_deco, cls, method):
         # arrange
         payload = {'test_a': 'TEST A'}

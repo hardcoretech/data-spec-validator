@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
-import os
-from os.path import abspath, dirname, join
-import os.path
 import argparse
-import configparser
+import os
+import os.path
 import subprocess
-
+from os.path import abspath, dirname, join
 
 CUR_DIR = dirname(abspath(__file__))
 ROOT_DIR = abspath(join(CUR_DIR, '..'))
@@ -22,7 +20,9 @@ def parse_args():
 
     # === upload  === #
     parser_upload = subparsers.add_parser('upload', help='upload to pypi')
-    parser_upload.add_argument('--repo', dest='repo', default='pypi', choices=('pypi', 'testpypi'), help='upload repo, pypi or testpypi')
+    parser_upload.add_argument(
+        '--repo', dest='repo', default='pypi', choices=('pypi', 'testpypi'), help='upload repo, pypi or testpypi'
+    )
     parser_upload.set_defaults(func=upload)
 
     args = parser.parse_args()
@@ -60,4 +60,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
