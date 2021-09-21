@@ -119,6 +119,28 @@ class TestDSV(unittest.TestCase):
         view = _View(request=fake_request)
         view.decorated_func(fake_request, **kwargs)
 
+    def test_non_view_request(self):
+        # arrange
+        class _NonViewSpec:
+            field_a = Checker([DIGIT_STR])
+
+        class _NonView:
+            @dsv(_NonViewSpec)
+            def decorated_func(self, request, field_a):
+                pass
+
+        factory = RequestFactory()
+        req = factory.request()
+        req = Request(req)
+        non_view = _NonView()
+
+        # action & assert
+        non_view.decorated_func(req, field_a='1')  # should pass validation
+
+        fake_args = ['1', '2', 3]
+        with self.assertRaises(Exception):
+            non_view.decorated_func(fake_args, field_a='1')
+
 
 if __name__ == '__main__':
     unittest.main()
