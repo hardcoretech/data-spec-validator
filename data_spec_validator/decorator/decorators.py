@@ -76,7 +76,7 @@ def _extract_request(*args):
         return req
     else:
         # Fallback to find the first request object
-        req = next(iter(filter(lambda o: _is_request(o), args)), None)
+        req = next(filter(lambda o: _is_request(o), args), None)
         if req:
             return req
         raise Exception('Unexpected usage')
