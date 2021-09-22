@@ -66,14 +66,8 @@ def _extract_request(*args):
     obj = args[0]
     if _is_request(obj):
         return obj
-    elif _is_view(obj):
-        if hasattr(obj, 'request') and isinstance(obj.request, WSGIRequest):
-            req = obj.request
-        else:
-            if len(args) < 2:
-                raise Exception('The decorated function must have at least 2 arguments')
-            req = args[1]
-        return req
+    elif hasattr(obj, 'request') and _is_request(obj.request):
+        return obj.request
     else:
         # Fallback to find the first request object
         req = next(filter(lambda o: _is_request(o), args), None)
