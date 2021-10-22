@@ -371,7 +371,8 @@ class UUIDValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data):
         try:
-            uuid.UUID(value)
+            if not isinstance(value, uuid.UUID):
+                uuid.UUID(value)
             ok = True
         except Exception:
             ok = False

@@ -1,4 +1,5 @@
 import unittest
+import uuid
 from datetime import date
 from itertools import chain
 
@@ -817,6 +818,10 @@ class TestSpec(unittest.TestCase):
                 uuid_field = Checker([UUID])
 
             return UuidSpec
+
+        uuid_inst = uuid.UUID('00000000-0000-0000-0000-000000000000')
+        ok_data = dict(uuid_field=uuid_inst)
+        assert validate_data_spec(ok_data, _get_uuid_spec())
 
         ok_data = dict(uuid_field='92d88ec0-a1f2-439a-b3c0-9e36db8b0b75')
         assert validate_data_spec(ok_data, _get_uuid_spec())

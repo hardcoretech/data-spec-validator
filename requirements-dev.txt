@@ -1,6 +1,6 @@
-Django
-djangorestframework
-python-dateutil
+Django>=3.0.3
+djangorestframework>=3.11.0
+python-dateutil>=2.8.2
 pre-commit==2.9.2
 autoflake==1.4
 isort==5.7.0
