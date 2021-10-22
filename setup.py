@@ -15,7 +15,7 @@ setuptools.setup(
     name="data-spec-validator",
     version=about['__version__'],
     author="CJHwong, falldog, HardCoreLewis, kilikkuo, xeonchen",
-    author_email="pypi@hardcoretech.co, pypi@hardcoretech.co, pypi@hardcoretech.co, kilik.kuo@gmail.com, pypi@hardcoretech.co",
+    author_email="pypi@hardcoretech.co",
     description="Simple validation tool for API",
     long_description=long_description,
     long_description_content_type="text/markdown",
