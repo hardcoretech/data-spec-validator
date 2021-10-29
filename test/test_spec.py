@@ -516,6 +516,18 @@ class TestSpec(unittest.TestCase):
         ok_data = dict(email_field='foo+bar@hc.co.uk')
         assert validate_data_spec(ok_data, _get_email_spec())
 
+        ok_data = dict(email_field='ABC@DEF.COM')
+        assert validate_data_spec(ok_data, _get_email_spec())
+
+        ok_data = dict(email_field='_ab_C@example.com')
+        assert validate_data_spec(ok_data, _get_email_spec())
+
+        ok_data = dict(email_field='-AB-c@example.com')
+        assert validate_data_spec(ok_data, _get_email_spec())
+
+        ok_data = dict(email_field='3aBc@example.com')
+        assert validate_data_spec(ok_data, _get_email_spec())
+
         nok_data = dict(email_field="example.com")
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_email_spec())
 
