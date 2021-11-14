@@ -91,6 +91,22 @@ class TestSpec(unittest.TestCase):
         nok_data = dict(none_field=3)
         assert is_something_error(TypeError, validate_data_spec, nok_data, _get_none_spec())
 
+    def test_allow_none(self):
+        def _get_allow_none_spec():
+            class AllowNoneSpec:
+                maybe_none_field = Checker([INT], allow_none=True)
+
+            return AllowNoneSpec
+
+        ok_data = dict(maybe_none_field=3)
+        assert validate_data_spec(ok_data, _get_allow_none_spec())
+
+        ok_data = dict(maybe_none_field=None)
+        assert validate_data_spec(ok_data, _get_allow_none_spec())
+
+        nok_data = dict(maybe_none_field='3')
+        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_allow_none_spec())
+
     def test_bool(self):
         def _get_bool_spec():
             class BoolSpec:
