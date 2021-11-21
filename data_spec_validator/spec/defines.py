@@ -139,14 +139,24 @@ class BaseValidator(metaclass=ABCMeta):
 
 
 class ValidateResult:
-    def __init__(self, spec=None, field=None, check=None, error=None):
-        self.spec = type(spec)
-        self.field = field
-        self.check = check
-        self.error = error
+    def __init__(self, spec=None, field=None, value=None, check=None, error=None):
+        self.__spec = type(spec)
+        self.__field = field
+        self.__value = value
+        self.__check = check
+        self.__error = error
 
-    def __str__(self):
-        return f'{self.spec}/{self.field}/{self.check}/{self.error}'
+    @property
+    def field(self):
+        return self.__field
+
+    @property
+    def value(self):
+        return self.__value
+
+    @property
+    def error(self):
+        return self.__error
 
 
 class UnknownFieldValue:
@@ -197,3 +207,28 @@ class Checker:
     @property
     def is_op_all(self):
         return self._op == CheckerOP.ALL
+
+
+class MsgLv(Enum):
+    VAGUE = 'vague'
+    DEFAULT = 'default'
+
+
+# TODO: Can make this a per-spec-check scope feature
+__message_level = MsgLv.DEFAULT
+
+
+def get_msg_level():
+    return __message_level
+
+
+def reset_msg_level(vague=False):
+    """
+    Setting vague=True, all error messages will be replaced to 'field: XXX not well-formatted'.
+    Otherwise, the message is as usual showing the reason.
+    """
+    global __message_level
+    if vague:
+        __message_level = MsgLv.VAGUE
+    else:
+        __message_level = MsgLv.DEFAULT

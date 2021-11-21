@@ -30,6 +30,7 @@ from data_spec_validator.spec import (
     Checker,
     CheckerOP,
     not_,
+    reset_msg_level,
     validate_data_spec,
 )
 from data_spec_validator.spec.validators import BaseValidator
@@ -347,7 +348,7 @@ class TestSpec(unittest.TestCase):
             ),
             bool_field=False,
         )
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_spec())
 
         nok_data = dict(
             int_field=1,
@@ -362,7 +363,7 @@ class TestSpec(unittest.TestCase):
             ),
             bool_field=False,
         )
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_spec())
 
     def test_list_of(self):
         def _get_list_of_spec_spec():
@@ -877,7 +878,7 @@ class TestSpec(unittest.TestCase):
         assert validate_data_spec(ok_data, _get_any_key_exists_spec())
 
         nok_data = dict(key=1)
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_any_key_exists_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_any_key_exists_spec())
 
     def test_key_coexist(self):
         def _get_key_coexist_spec():
@@ -890,10 +891,10 @@ class TestSpec(unittest.TestCase):
         assert validate_data_spec(ok_data, _get_key_coexist_spec())
 
         nok_data = dict(key2=1)
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_key_coexist_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_key_coexist_spec())
 
         nok_data = dict(key=1)
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_key_coexist_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_key_coexist_spec())
 
     def test_not_checker(self):
         def _get_non_bool_spec():
@@ -987,6 +988,28 @@ class TestCustomSpec(unittest.TestCase):
 
         nok_data = dict(key=10)
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_gt_10_spec())
+
+
+class TestMessageLevel(unittest.TestCase):
+    def test_vague_message(self):
+        def _get_int_spec():
+            class IntSpec:
+                int_field = Checker([INT])
+
+            return IntSpec
+
+        reset_msg_level(vague=True)
+        nok_data = dict(int_field='3')
+        try:
+            validate_data_spec(nok_data, _get_int_spec())
+        except Exception as e:
+            assert str(e).find('well-formatted') >= 0
+
+        reset_msg_level()
+        try:
+            validate_data_spec(nok_data, _get_int_spec())
+        except Exception as e:
+            assert str(e).find('reason') >= 0
 
 
 if __name__ == '__main__':

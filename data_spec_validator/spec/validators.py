@@ -85,13 +85,13 @@ def _valid_spec_field(data, field, spec):
             except AttributeError as ae:
                 if check == LIST_OF:
                     # During list_of check, the target should be one kind of spec.
-                    ok, error = False, TypeError(f'{value} is not a spec of {spec}, detail: {ae}')
+                    ok, error = False, TypeError(f'{repr(value)} is not a spec of {spec}, detail: {repr(ae)}')
                 else:
-                    ok, error = False, RuntimeError(f'{ae}')
+                    ok, error = False, RuntimeError(f'{repr(ae)}')
             except Exception as e:
                 # For any unwell-handled case, go this way for now.
-                ok, error = False, RuntimeError(f'{e}')
-            results.append((ok, ValidateResult(spec, field, check, error)))
+                ok, error = False, RuntimeError(f'{repr(e)}')
+            results.append((ok, ValidateResult(spec, field, value, check, error)))
 
     nok_results = [rs for (ok, rs) in results if not ok]
     if checker.is_op_any and len(nok_results) == len(checks):
@@ -119,7 +119,7 @@ class IntValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data):
-        return type(value) is int, TypeError(f'{value} is not a integer')
+        return type(value) is int, TypeError(f'{repr(value)} is not a integer')
 
 
 class StrValidator(BaseValidator):
@@ -127,7 +127,7 @@ class StrValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data):
-        return type(value) is str, TypeError(f'{value} is not a string')
+        return type(value) is str, TypeError(f'{repr(value)} is not a string')
 
 
 class NoneValidator(BaseValidator):
@@ -135,7 +135,7 @@ class NoneValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data):
-        return value is None, TypeError(f'{value} is not None')
+        return value is None, TypeError(f'{repr(value)} is not None')
 
 
 class BoolValidator(BaseValidator):
@@ -143,7 +143,7 @@ class BoolValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data):
-        return type(value) is bool, TypeError(f'{value} is not a boolean')
+        return type(value) is bool, TypeError(f'{repr(value)} is not a boolean')
 
 
 class JSONValidator(BaseValidator):
@@ -156,7 +156,7 @@ class JSONValidator(BaseValidator):
             ok = True
         except Exception:
             ok = False
-        return ok, TypeError(f'{value} is not a json object')
+        return ok, TypeError(f'{repr(value)} is not a json object')
 
 
 class JSONBoolValidator(BaseValidator):
@@ -168,7 +168,7 @@ class JSONBoolValidator(BaseValidator):
             ok = type(json.loads(value)) is bool
         except Exception:
             ok = False
-        return ok, TypeError(f'{value} is not a json boolean')
+        return ok, TypeError(f'{repr(value)} is not a json boolean')
 
 
 class ListValidator(BaseValidator):
@@ -176,7 +176,7 @@ class ListValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data):
-        return type(value) is list, TypeError(f'{value} is not a list')
+        return type(value) is list, TypeError(f'{repr(value)} is not a list')
 
 
 class DictValidator(BaseValidator):
@@ -184,7 +184,7 @@ class DictValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data):
-        return type(value) is dict, TypeError(f'{value} is not a dict')
+        return type(value) is dict, TypeError(f'{repr(value)} is not a dict')
 
 
 class AmountValidator(BaseValidator):
@@ -196,7 +196,7 @@ class AmountValidator(BaseValidator):
             float(value)
             return True, ''
         except ValueError:
-            return False, ValueError(f'Cannot convert {value} to float')
+            return False, ValueError(f'Cannot convert {repr(value)} to float')
 
 
 class AmountRangeValidator(BaseValidator):
@@ -213,7 +213,7 @@ class AmountRangeValidator(BaseValidator):
         lower_bound = amount_range_info.get('min', float('-inf'))
         upper_bound = amount_range_info.get('max', float('inf'))
 
-        err_msg = f'Amount: {value} is not within {amount_range_info}'
+        err_msg = f'Amount: {repr(value)} must be between {lower_bound} and {upper_bound}'
         return lower_bound <= float(value) <= upper_bound, ValueError(err_msg)
 
 
@@ -234,7 +234,7 @@ class LengthValidator(BaseValidator):
             'Lower boundary cannot less than 0 for length validator',
         )
 
-        err_msg = f'Length of {value} is not in between {length_info}'
+        err_msg = f'Length of {repr(value)} must be between {lower_bound} and {upper_bound}'
         if upper_bound:
             return lower_bound <= len(value) <= upper_bound, ValueError(err_msg)
         return lower_bound <= len(value), ValueError(err_msg)
@@ -276,7 +276,7 @@ class OneOfValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data):
         options = extra.get(OneOfValidator.name)
-        return value in options, ValueError(f'{value} is not one of {options}')
+        return value in options, ValueError(f'{repr(value)} is not one of {options}')
 
 
 class DecimalPlaceValidator(BaseValidator):
@@ -288,7 +288,9 @@ class DecimalPlaceValidator(BaseValidator):
         dv = Decimal(str(value))
         dv_tup = dv.as_tuple()
         dv_dp = -1 * dv_tup.exponent if dv_tup.exponent < 0 else 0
-        return dv_dp <= dp_info, ValueError(f'Expect decimal places({dp_info}) for value: {value}, ' f'but got {dv_dp}')
+        return dv_dp <= dp_info, ValueError(
+            f'Expect decimal places({dp_info}) for value: {repr(value)}, ' f'but got {dv_dp}'
+        )
 
 
 class DateValidator(BaseValidator):
@@ -300,7 +302,7 @@ class DateValidator(BaseValidator):
             dateutil.parser.parse(value).date()
             return True, ''
         except ValueError:
-            return False, ValueError(f'Unexpected date format: {value}')
+            return False, ValueError(f'Unexpected date format: {repr(value)}')
 
 
 class DateRangeValidator(BaseValidator):
@@ -325,7 +327,7 @@ class DateRangeValidator(BaseValidator):
         max_date = dateutil.parser.parse(max_date_str).date()
         value_date = dateutil.parser.parse(value).date()
         return min_date <= value_date <= max_date, ValueError(
-            f'{value} is not in range {min_date_str} ~ {max_date_str}'
+            f'{repr(value)} is not in range {min_date_str} ~ {max_date_str}'
         )
 
 
@@ -334,7 +336,7 @@ class DigitStrValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data):
-        return type(value) == str and value.isdigit(), TypeError(f'{value} is not a digit str')
+        return type(value) == str and value.isdigit(), TypeError(f'{repr(value)} is not a digit str')
 
 
 class AnyKeyExistsValidator(BaseValidator):
@@ -356,7 +358,7 @@ class KeyCoexistsValidator(BaseValidator):
         return (
             all(not isinstance(related_field, UnknownFieldValue) for related_field in related_fields)
             and not isinstance(value, UnknownFieldValue),
-            ValueError(f'missing key in {related_keys} .'),
+            LookupError(f'Some coexisting keys {related_keys} missing.'),
         )
 
 
@@ -369,7 +371,7 @@ class EmailValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data):
         return type(value) == str and re.fullmatch(EmailValidator.regex, value), ValueError(
-            f'{value} is not a valid email address'
+            f'{repr(value)} is not a valid email address'
         )
 
 
@@ -384,7 +386,7 @@ class UUIDValidator(BaseValidator):
             ok = True
         except Exception:
             ok = False
-        return ok, ValueError(f'{value} is not an UUID object')
+        return ok, ValueError(f'{repr(value)} is not an UUID object')
 
 
 class RegexValidator(BaseValidator):
@@ -408,5 +410,5 @@ class RegexValidator(BaseValidator):
             _raise_if_condition(True, f'unsupported match method: {match_method}')
 
         return type(value) == str and match_func(pattern, value), ValueError(
-            f'"{value}" does not match "{error_regex_param}"'
+            f'{repr(value)} does not match "{error_regex_param}"'
         )

@@ -1,8 +1,12 @@
-from .defines import ValidateResult
+from .defines import MsgLv, UnknownFieldValue, ValidateResult, get_msg_level
 from .validators import SpecValidator
 
 
 def _wrap_error_with_field_info(failure):
+    if get_msg_level() == MsgLv.VAGUE:
+        return RuntimeError(f'field: {failure.field} not well-formatted')
+    if isinstance(failure.value, UnknownFieldValue):
+        return LookupError(f'field: {failure.field} missing')
     msg = f'field: {failure.field}, reason: {failure.error}'
     return type(failure.error)(msg)
 
@@ -37,17 +41,21 @@ def _find_most_significant_error(failures):
             err_key = 'PermissionError'
         elif isinstance(err, TypeError):
             err_key = 'TypeError'
+        elif isinstance(err, LookupError):
+            err_key = 'LookupError'
         else:
             err_key = 'RuntimeError'
         err_map.setdefault(err_key, []).append(err)
 
-    # Severity, PermissionError > TypeError > ValueError > RuntimeError.
+    # Severity, PermissionError > LookupError > TypeError > ValueError > RuntimeError.
     errors = (
         err_map.get('PermissionError', [])
+        or err_map.get('LookupError', [])
         or err_map.get('TypeError', [])
         or err_map.get('ValueError', [])
         or err_map.get('RuntimeError', [])
     )
+    # TODO: For better information, we can raise an error with all error messages at one shot
     main_error = errors[0]
     return main_error
 

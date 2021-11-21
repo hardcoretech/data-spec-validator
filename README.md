@@ -130,6 +130,16 @@ validate_data_spec(ok_data, GreaterThanSpec) # return True
 nok_data = dict(key=9)
 validate_data_spec(ok_data, GreaterThanSpec) # raise Exception
 ```
+### Message Level
+
+- 2 modes (**Default** v.s. **Vague**), can be switched by calling `reset_msg_level(vague=True)`
+```python
+# In default mode, any exception happens, there will be a reason in the message
+"field: XXX, reason: '3' is not a integer"
+
+# In vague mode, any exception happens, a general message is shown
+"field: XXX not well-formatted"
+```
 
 ## Test
 ```bash
