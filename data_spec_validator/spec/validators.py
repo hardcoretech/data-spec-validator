@@ -48,6 +48,17 @@ def _extract_fields(checker):
     return list(filter(lambda f: type(f) == str and not (f.startswith('__') and f.endswith('__')), dir(checker)))
 
 
+def _extract_value(checks: list, data: dict, field: str):
+    if LIST_OF in checks and hasattr(data, 'getlist'):
+        # For QueryDict, all query values are put into list for the same key.
+        # It should be client side's (Spec maker) responsibility to indicate that
+        # whether the field is a list or not.
+        value = data.getlist(field, get_unknown_field_value())
+    else:
+        value = data.get(field, get_unknown_field_value())
+    return value
+
+
 def _valid_spec_field(data, field, spec):
     checker = getattr(spec, field)
 
@@ -57,16 +68,13 @@ def _valid_spec_field(data, field, spec):
     if extra.get(SpecValidator.name) == SELF:
         extra[SpecValidator.name] = spec
 
-    if LIST_OF in checks and hasattr(data, 'getlist'):
-        # For QueryDict, all query values are put into list for the same key.
-        # It should be client side's (Spec maker) responsibility to indicate that
-        # whether the field is a list or not.
-        value = data.getlist(field, get_unknown_field_value())
-    else:
-        value = data.get(field, get_unknown_field_value())
+    value = _extract_value(checks, data, field)
 
     results = []
     if value == get_unknown_field_value() and checker.allow_optional:
+        # Pass the checker's validation directly
+        pass
+    elif value is None and checker.allow_none:
         # Pass the checker's validation directly
         pass
     else:
@@ -220,10 +228,10 @@ class LengthValidator(BaseValidator):
             f'Invalid extra configuration: {extra}',
         )
 
-        lower_bound, upper_bound = length_info.get('min', 1), length_info.get('max')
+        lower_bound, upper_bound = length_info.get('min', 0), length_info.get('max')
         _raise_if_condition(
-            lower_bound < 1,
-            'Lower boundary is less than 1 for length validator',
+            lower_bound < 0,
+            'Lower boundary cannot less than 0 for length validator',
         )
 
         err_msg = f'Length of {value} is not in between {length_info}'

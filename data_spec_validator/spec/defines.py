@@ -160,17 +160,20 @@ class CheckerOP(Enum):
 
 
 class Checker:
-    def __init__(self, checks, optional=False, op=CheckerOP.ALL, extra=None):
+    def __init__(self, checks, optional=False, allow_none=False, op=CheckerOP.ALL, extra=None):
         """
         checks: list of str(Check)
         optional: boolean
                   Set optional to True, the validation process will be passed if the field is absent
+        allow_none: boolean
+                  Set allow_none to True, the field value can be None
         op: CheckerOP
         extra: None or Dict
         """
         self.checks = checks or []
         self._op = op
         self._optional = optional
+        self._allow_none = allow_none
         self.extra = extra or {}
 
         self._ensure()
@@ -178,6 +181,10 @@ class Checker:
     def _ensure(self):
         if self._optional and len(self.checks) == 0:
             raise ValueError('Require at least 1 check when set optional to True')
+
+    @property
+    def allow_none(self):
+        return self._allow_none
 
     @property
     def allow_optional(self):
