@@ -140,6 +140,7 @@ class BaseValidator(metaclass=ABCMeta):
 
 class ValidateResult:
     def __init__(self, spec=None, field=None, value=None, check=None, error=None):
+        # TODO: Output spec & check information when there's a debug message level for development.
         self.__spec = type(spec)
         self.__field = field
         self.__value = value
