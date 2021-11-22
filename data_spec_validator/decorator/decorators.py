@@ -89,7 +89,7 @@ def _do_validate(data, spec):
         error = drf_exceptions.ValidationError(str(value_err.args))
     except PermissionError as perm_err:
         error = drf_exceptions.PermissionDenied(str(perm_err.args))
-    except (TypeError, RuntimeError) as parse_err:
+    except (LookupError, TypeError, RuntimeError) as parse_err:
         error = drf_exceptions.ParseError(str(parse_err.args))
 
     if error:
