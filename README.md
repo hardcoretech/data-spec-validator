@@ -143,7 +143,7 @@ validate_data_spec(ok_data, GreaterThanSpec) # raise Exception
 
 ### Spec Object Wrapper
 
-- Inherit Spec wrapper, the spec object can simply valdates data with a class method. (see [test_wrapped_spec_class_validate](https://github.com/travisliu/data-spec-validator/blob/feat/spec-object-wrapper/test/test_spec.py#L993) for more)
+- Inherit Spec wrapper, the spec object can simply validate data with a class method. (see [test_wrapped_spec_class_validate](https://github.com/travisliu/data-spec-validator/blob/feat/spec-object-wrapper/test/test_spec.py#L993) for more)
 ```python
 from data_spec_validator.spec import (
     INT,
