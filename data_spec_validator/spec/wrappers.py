@@ -19,16 +19,18 @@ class SpecObject:
     pass
 
 class Spec:
-    __API_ATTRIBUTES = ["validate"]
     __spec_object = None
+
+    @classmethod
+    def __get_reserved_attributes(cls):
+        return dir(Spec)
 
     @classmethod
     def __create_specObject(cls):
         spec = SpecObject()
+        reserved_attributes = cls.__get_reserved_attributes()
         for attribute in dir(cls):
-            if attribute.startswith("__"): continue
-            if attribute.startswith("_Spec__"): continue
-            if attribute in cls.__API_ATTRIBUTES: continue
+            if attribute in reserved_attributes: continue
 
             setattr(spec, attribute, getattr(cls, attribute))
 
