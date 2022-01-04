@@ -1,4 +1,5 @@
 from .actions import validate_data_spec
+from .wrappers import Spec
 
 # Export generic validator NAME
 from .defines import (

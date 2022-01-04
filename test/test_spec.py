@@ -29,6 +29,7 @@ from data_spec_validator.spec import (
     UUID,
     Checker,
     CheckerOP,
+    Spec,
     not_,
     reset_msg_level,
     validate_data_spec,
@@ -989,6 +990,20 @@ class TestCustomSpec(unittest.TestCase):
         nok_data = dict(key=10)
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_gt_10_spec())
 
+    def test_wrapped_spec_class_validate(self):
+        def _get_wrapped_spec():
+            class WrappedSpec(Spec):
+                int_field = Checker([INT])
+
+            return WrappedSpec
+
+        ok_data = dict(int_field=3)
+        assert _get_wrapped_spec().validate(ok_data)
+
+        nok_data = dict(int_field='3')
+        assert is_type_error(_get_wrapped_spec().validate, nok_data)
+
+        self.assertFalse(_get_wrapped_spec().validate(nok_data, nothrow=True))
 
 class TestMessageLevel(unittest.TestCase):
     def test_vague_message(self):
