@@ -1,4 +1,4 @@
-from .defines import BaseValidator
+from .defines import BaseValidator, Checker
 from .actions import validate_data_spec
 
 class BaseWrapper:
@@ -15,31 +15,23 @@ class NotWrapper(BaseWrapper, BaseValidator):
         new_error = type(error)(f'not({msg})')
         return not ok, new_error
 
-class SpecObject:
-    pass
 
-class Spec:
-    __spec_object = None
+class SpecMeta(type):
+    def __new__(cls, name, bases, classdict):
+        fields = {}
+        for key, value in classdict.items():
+            if isinstance(value, Checker):
+                fields[key] = value
 
-    @classmethod
-    def __get_reserved_attributes(cls):
-        return dir(Spec)
+        classdict['_spec_fields'] = fields
+        return type.__new__(cls, name, bases, classdict)
 
-    @classmethod
-    def __create_specObject(cls):
-        spec = SpecObject()
-        reserved_attributes = cls.__get_reserved_attributes()
-        for attribute in dir(cls):
-            if attribute in reserved_attributes: continue
+    @property
+    def spec_fields(cls):
+        return cls._spec_fields
 
-            setattr(spec, attribute, getattr(cls, attribute))
 
-        return spec
-
+class Spec(metaclass = SpecMeta):
     @classmethod
     def validate(cls, data, **kwargs):
-        if (cls.__spec_object is None):
-            cls.__spec_object = cls.__create_specObject()
-
-        return validate_data_spec(data, cls.__spec_object, **kwargs)
-
+        return validate_data_spec(data, cls, **kwargs)

@@ -1005,6 +1005,7 @@ class TestCustomSpec(unittest.TestCase):
 
         self.assertFalse(_get_wrapped_spec().validate(nok_data, nothrow=True))
 
+
 class TestMessageLevel(unittest.TestCase):
     def test_vague_message(self):
         def _get_int_spec():
