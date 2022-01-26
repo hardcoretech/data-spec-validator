@@ -45,6 +45,8 @@ def _raise_if_condition(condition, message, error_cls=RuntimeError):
 
 
 def _extract_fields(checker):
+    if hasattr(checker, 'spec_fields'): return checker.spec_fields.keys()
+
     return list(filter(lambda f: type(f) == str and not (f.startswith('__') and f.endswith('__')), dir(checker)))
 
 
