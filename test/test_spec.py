@@ -29,6 +29,7 @@ from data_spec_validator.spec import (
     UUID,
     Checker,
     CheckerOP,
+    dsv_feature,
     not_,
     reset_msg_level,
     validate_data_spec,
@@ -923,6 +924,58 @@ class TestSpec(unittest.TestCase):
 
         nok_data = dict(keys=['1', True, date(2000, 1, 1)])
         assert is_something_error(TypeError, validate_data_spec, nok_data, _get_list_of_non_bool_spec())
+
+    def test_strict_mode(self):
+        @dsv_feature(strict=True)
+        class _LeafStrictSpec:
+            d = Checker([BOOL])
+
+        class _LeafNonStrictSpec:
+            e = Checker([BOOL])
+
+        class _MiddleSpec:
+            c = Checker([BOOL])
+            leaf_strict = Checker([LIST_OF], extra={LIST_OF: SPEC, SPEC: _LeafStrictSpec})
+            leaf_non_strict = Checker([SPEC], extra={SPEC: _LeafNonStrictSpec})
+
+        @dsv_feature(strict=True)
+        class _RootStrictSpec:
+            a = Checker([BOOL])
+            middle = Checker([SPEC], extra={SPEC: _MiddleSpec})
+
+        ok_data = dict(
+            a=True,
+            middle=dict(
+                c=False,
+                leaf_strict=[dict(d=True), dict(d=False)],
+                leaf_non_strict=dict(e=True, f=False),
+                g=True,
+            ),
+        )
+        assert validate_data_spec(ok_data, _RootStrictSpec)
+
+        nok_data_root = dict(
+            a=True,
+            middle=dict(
+                c=False,
+                leaf_strict=[dict(d=True), dict(d=False)],
+                leaf_non_strict=dict(e=True, f=False),
+                g=True,
+            ),
+            unexpected_field=False,
+        )
+        assert is_something_error(ValueError, validate_data_spec, nok_data_root, _RootStrictSpec)
+
+        nok_data_leaf = dict(
+            a=True,
+            middle=dict(
+                c=False,
+                leaf_strict=[dict(d=True), dict(d=False, unexpected_field=False)],
+                leaf_non_strict=dict(e=True, f=False),
+                g=True,
+            ),
+        )
+        assert is_something_error(ValueError, validate_data_spec, nok_data_leaf, _RootStrictSpec)
 
 
 class TestCustomSpec(unittest.TestCase):

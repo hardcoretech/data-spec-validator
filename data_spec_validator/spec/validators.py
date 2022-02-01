@@ -2,6 +2,7 @@ import json
 import re
 import uuid
 from decimal import Decimal
+from typing import List, Tuple
 
 import dateutil.parser
 
@@ -37,6 +38,7 @@ from .defines import (
     get_unknown_field_value,
     get_validator,
 )
+from .features import is_strict
 
 
 def _raise_if_condition(condition, message, error_cls=RuntimeError):
@@ -44,8 +46,11 @@ def _raise_if_condition(condition, message, error_cls=RuntimeError):
         raise error_cls(message)
 
 
-def _extract_fields(checker):
-    return list(filter(lambda f: type(f) == str and not (f.startswith('__') and f.endswith('__')), dir(checker)))
+def _extract_fields(spec) -> List[str]:
+    if type(spec) != type:
+        raise RuntimeError(f'{spec} should be just a class')
+
+    return list(filter(lambda f: type(f) == str and not (f.startswith('__') and f.endswith('__')), spec.__dict__))
 
 
 def _extract_value(checks: list, data: dict, field: str):
@@ -59,7 +64,7 @@ def _extract_value(checks: list, data: dict, field: str):
     return value
 
 
-def _valid_spec_field(data, field, spec):
+def __validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
     checker = getattr(spec, field)
 
     checks = checker.checks
@@ -101,8 +106,17 @@ def _valid_spec_field(data, field, spec):
     return True, []
 
 
-def _valid_spec_fields(data, fields, spec):
-    rs = [_valid_spec_field(data, f, spec) for f in fields]
+def _validate_spec_features(data, fields, spec) -> Tuple[bool, ValidateResult]:
+    if is_strict(spec):
+        unexpected = set(data.keys()) - set(fields)
+        if unexpected:
+            error = ValueError(f'Unexpected field keys({unexpected}) found in strict mode spec')
+            return False, ValidateResult(spec, unexpected, data, 'strict', error)
+    return True, ValidateResult()
+
+
+def _validate_spec_fields(data, fields, spec) -> List[Tuple[bool, List[ValidateResult]]]:
+    rs = [__validate_field(data, f, spec) for f in fields]
     return rs
 
 
@@ -153,10 +167,9 @@ class JSONValidator(BaseValidator):
     def validate(value, extra, data):
         try:
             json.loads(value)
-            ok = True
-        except Exception:
-            ok = False
-        return ok, TypeError(f'{repr(value)} is not a json object')
+            return True, ''
+        except Exception as e:
+            return False, TypeError(f'{repr(value)} is not a json object, {e.__str__()}')
 
 
 class JSONBoolValidator(BaseValidator):
@@ -166,9 +179,11 @@ class JSONBoolValidator(BaseValidator):
     def validate(value, extra, data):
         try:
             ok = type(json.loads(value)) is bool
-        except Exception:
-            ok = False
-        return ok, TypeError(f'{repr(value)} is not a json boolean')
+            if ok:
+                return True, ''
+            return False, TypeError(f'{repr(value)} is not a json boolean')
+        except Exception as e:
+            return False, TypeError(f'{repr(value)} is not a json object, {e.__str__()}')
 
 
 class ListValidator(BaseValidator):
@@ -244,11 +259,16 @@ class SpecValidator(BaseValidator):
     name = SPEC
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, List[Tuple[bool, ValidateResult]]]:
         target_spec = extra.get(SpecValidator.name)
 
         fields = _extract_fields(target_spec)
-        results = _valid_spec_fields(value, fields, target_spec)
+
+        result = _validate_spec_features(value, fields, target_spec)
+        if not result[0]:
+            return False, [result]
+
+        results = _validate_spec_fields(value, fields, target_spec)
         failures = [r for r in results if not r[0]]
 
         ok = len(failures) == 0
@@ -383,10 +403,9 @@ class UUIDValidator(BaseValidator):
         try:
             if not isinstance(value, uuid.UUID):
                 uuid.UUID(value)
-            ok = True
-        except Exception:
-            ok = False
-        return ok, ValueError(f'{repr(value)} is not an UUID object')
+            return True, ''
+        except Exception as e:
+            return False, ValueError(f'{repr(value)} is not an UUID object: {e.__str__}')
 
 
 class RegexValidator(BaseValidator):
@@ -400,6 +419,7 @@ class RegexValidator(BaseValidator):
         error_regex_param = regex_param.copy()
         error_regex_param['method'] = match_method
 
+        match_func = None
         if match_method == 'match':
             match_func = re.match
         elif match_method == 'fullmatch':
@@ -409,6 +429,6 @@ class RegexValidator(BaseValidator):
         else:
             _raise_if_condition(True, f'unsupported match method: {match_method}')
 
-        return type(value) == str and match_func(pattern, value), ValueError(
+        return type(value) == str and match_func and match_func(pattern, value), ValueError(
             f'{repr(value)} does not match "{error_regex_param}"'
         )
