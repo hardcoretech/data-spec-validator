@@ -1,17 +1,19 @@
+from typing import Dict
+
 from data_spec_validator.spec.defines import BaseValidator
 
 _custom_map = dict()
 
 
-def get_custom_check_2_validator_map():
+def get_custom_check_2_validator_map() -> Dict[str, BaseValidator]:
     return _custom_map
 
 
-def _get_class_name(instance):
+def _get_class_name(instance) -> str:
     return instance.__class__.__name__
 
 
-def register(check_2_validator_map):
+def register(check_2_validator_map) -> bool:
     for check, validator in check_2_validator_map.items():
         if not issubclass(type(validator), BaseValidator):
             raise TypeError(f'{_get_class_name(validator)} is not a subclass of BaseValidator')

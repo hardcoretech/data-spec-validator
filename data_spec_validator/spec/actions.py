@@ -2,7 +2,7 @@ from .defines import MsgLv, UnknownFieldValue, ValidateResult, get_msg_level
 from .validators import SpecValidator
 
 
-def _wrap_error_with_field_info(failure):
+def _wrap_error_with_field_info(failure) -> Exception:
     if get_msg_level() == MsgLv.VAGUE:
         return RuntimeError(f'field: {failure.field} not well-formatted')
     if isinstance(failure.value, UnknownFieldValue):
@@ -28,7 +28,7 @@ def _flatten_results(failures, errors=None):
         _flatten_results(failures.error, errors)
 
 
-def _find_most_significant_error(failures):
+def _find_most_significant_error(failures) -> Exception:
     errors = []
     _flatten_results(failures, errors)
 
@@ -60,7 +60,7 @@ def _find_most_significant_error(failures):
     return main_error
 
 
-def validate_data_spec(data, spec, **kwargs):
+def validate_data_spec(data, spec, **kwargs) -> bool:
     # SPEC validator as the root validator
     ok, failures = SpecValidator.validate(data, {SpecValidator.name: spec}, None)
     nothrow = kwargs.get('nothrow', False)
