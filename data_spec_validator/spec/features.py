@@ -26,8 +26,7 @@ def _process_class(cls, strict) -> type:
 
 
 def dsv_feature(strict=False) -> type:
-    def wrap(*args):
-        cls = args[0]
+    def wrap(cls):
         return _process_class(cls, strict)
 
     return wrap
