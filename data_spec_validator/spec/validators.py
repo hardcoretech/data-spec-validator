@@ -2,6 +2,7 @@ import json
 import re
 import uuid
 from decimal import Decimal
+from typing import List, Tuple, Union
 
 import dateutil.parser
 
@@ -37,6 +38,7 @@ from .defines import (
     get_unknown_field_value,
     get_validator,
 )
+from .features import is_strict
 
 
 def _raise_if_condition(condition, message, error_cls=RuntimeError):
@@ -44,8 +46,11 @@ def _raise_if_condition(condition, message, error_cls=RuntimeError):
         raise error_cls(message)
 
 
-def _extract_fields(checker):
-    return list(filter(lambda f: type(f) == str and not (f.startswith('__') and f.endswith('__')), dir(checker)))
+def _extract_fields(spec) -> List[str]:
+    if type(spec) != type:
+        raise RuntimeError(f'{spec} should be just a class')
+
+    return list(filter(lambda f: type(f) == str and not (f.startswith('__') and f.endswith('__')), spec.__dict__))
 
 
 def _extract_value(checks: list, data: dict, field: str):
@@ -59,7 +64,7 @@ def _extract_value(checks: list, data: dict, field: str):
     return value
 
 
-def _valid_spec_field(data, field, spec):
+def __validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
     checker = getattr(spec, field)
 
     checks = checker.checks
@@ -101,8 +106,17 @@ def _valid_spec_field(data, field, spec):
     return True, []
 
 
-def _valid_spec_fields(data, fields, spec):
-    rs = [_valid_spec_field(data, f, spec) for f in fields]
+def _validate_spec_features(data, fields, spec) -> Tuple[bool, List[ValidateResult]]:
+    if is_strict(spec):
+        unexpected = set(data.keys()) - set(fields)
+        if unexpected:
+            error = ValueError(f'Unexpected field keys({unexpected}) found in strict mode spec')
+            return False, [ValidateResult(spec, unexpected, data, 'strict', error)]
+    return True, [ValidateResult()]
+
+
+def _validate_spec_fields(data, fields, spec) -> List[Tuple[bool, List[ValidateResult]]]:
+    rs = [__validate_field(data, f, spec) for f in fields]
     return rs
 
 
@@ -118,80 +132,92 @@ class IntValidator(BaseValidator):
     name = INT
 
     @staticmethod
-    def validate(value, extra, data):
-        return type(value) is int, TypeError(f'{repr(value)} is not a integer')
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        ok = type(value) is int
+        info = '' if ok else TypeError(f'{repr(value)} is not a integer')
+        return ok, info
 
 
 class StrValidator(BaseValidator):
     name = STR
 
     @staticmethod
-    def validate(value, extra, data):
-        return type(value) is str, TypeError(f'{repr(value)} is not a string')
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        ok = type(value) is str
+        info = '' if ok else TypeError(f'{repr(value)} is not a string')
+        return ok, info
 
 
 class NoneValidator(BaseValidator):
     name = NONE
 
     @staticmethod
-    def validate(value, extra, data):
-        return value is None, TypeError(f'{repr(value)} is not None')
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        ok = value is None
+        info = '' if ok else TypeError(f'{repr(value)} is not None')
+        return ok, info
 
 
 class BoolValidator(BaseValidator):
     name = BOOL
 
     @staticmethod
-    def validate(value, extra, data):
-        return type(value) is bool, TypeError(f'{repr(value)} is not a boolean')
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        ok = type(value) is bool
+        info = '' if ok else TypeError(f'{repr(value)} is not a boolean')
+        return ok, info
 
 
 class JSONValidator(BaseValidator):
     name = JSON
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         try:
             json.loads(value)
-            ok = True
-        except Exception:
-            ok = False
-        return ok, TypeError(f'{repr(value)} is not a json object')
+            return True, ''
+        except Exception as e:
+            return False, TypeError(f'{repr(value)} is not a json object, {e.__str__()}')
 
 
 class JSONBoolValidator(BaseValidator):
     name = JSON_BOOL
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         try:
             ok = type(json.loads(value)) is bool
-        except Exception:
-            ok = False
-        return ok, TypeError(f'{repr(value)} is not a json boolean')
+            info = '' if ok else TypeError(f'{repr(value)} is not a json boolean')
+            return ok, info
+        except Exception as e:
+            return False, TypeError(f'{repr(value)} is not a json object, {e.__str__()}')
 
 
 class ListValidator(BaseValidator):
     name = LIST
 
     @staticmethod
-    def validate(value, extra, data):
-        return type(value) is list, TypeError(f'{repr(value)} is not a list')
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        ok = type(value) is list
+        info = '' if ok else TypeError(f'{repr(value)} is not a list')
+        return ok, info
 
 
 class DictValidator(BaseValidator):
     name = DICT
 
     @staticmethod
-    def validate(value, extra, data):
-        return type(value) is dict, TypeError(f'{repr(value)} is not a dict')
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        ok = type(value) is dict
+        info = TypeError(f'{repr(value)} is not a dict')
+        return ok, info
 
 
 class AmountValidator(BaseValidator):
     name = AMOUNT
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         try:
             float(value)
             return True, ''
@@ -203,7 +229,7 @@ class AmountRangeValidator(BaseValidator):
     name = AMOUNT_RANGE
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         amount_range_info = extra.get(AmountRangeValidator.name)
         _raise_if_condition(
             type(amount_range_info) != dict or ('min' not in amount_range_info and 'max' not in amount_range_info),
@@ -213,15 +239,16 @@ class AmountRangeValidator(BaseValidator):
         lower_bound = amount_range_info.get('min', float('-inf'))
         upper_bound = amount_range_info.get('max', float('inf'))
 
-        err_msg = f'Amount: {repr(value)} must be between {lower_bound} and {upper_bound}'
-        return lower_bound <= float(value) <= upper_bound, ValueError(err_msg)
+        ok = lower_bound <= float(value) <= upper_bound
+        info = '' if ok else ValueError(f'Amount: {repr(value)} must be between {lower_bound} and {upper_bound}')
+        return ok, info
 
 
 class LengthValidator(BaseValidator):
     name = LENGTH
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         length_info = extra.get(LengthValidator.name)
         _raise_if_condition(
             type(length_info) != dict or ('min' not in length_info and 'max' not in length_info),
@@ -234,21 +261,25 @@ class LengthValidator(BaseValidator):
             'Lower boundary cannot less than 0 for length validator',
         )
 
-        err_msg = f'Length of {repr(value)} must be between {lower_bound} and {upper_bound}'
-        if upper_bound:
-            return lower_bound <= len(value) <= upper_bound, ValueError(err_msg)
-        return lower_bound <= len(value), ValueError(err_msg)
+        ok = lower_bound <= len(value) <= upper_bound if upper_bound else lower_bound <= len(value)
+        info = '' if ok else ValueError(f'Length of {repr(value)} must be between {lower_bound} and {upper_bound}')
+        return ok, info
 
 
 class SpecValidator(BaseValidator):
     name = SPEC
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, List[Tuple[bool, List[ValidateResult]]]]:
         target_spec = extra.get(SpecValidator.name)
 
         fields = _extract_fields(target_spec)
-        results = _valid_spec_fields(value, fields, target_spec)
+
+        result = _validate_spec_features(value, fields, target_spec)
+        if not result[0]:
+            return False, [result]
+
+        results = _validate_spec_fields(value, fields, target_spec)
         failures = [r for r in results if not r[0]]
 
         ok = len(failures) == 0
@@ -259,7 +290,7 @@ class ListOfValidator(BaseValidator):
     name = LIST_OF
 
     @staticmethod
-    def validate(values, extra, data):
+    def validate(values, extra, data) -> Tuple[bool, Union[Exception, str]]:
         check = extra.get(ListOfValidator.name)
         validator = get_validator(check)
         for value in values:
@@ -274,30 +305,32 @@ class OneOfValidator(BaseValidator):
     name = ONE_OF
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         options = extra.get(OneOfValidator.name)
-        return value in options, ValueError(f'{repr(value)} is not one of {options}')
+        ok = value in options
+        info = '' if ok else ValueError(f'{repr(value)} is not one of {options}')
+        return ok, info
 
 
 class DecimalPlaceValidator(BaseValidator):
     name = DECIMAL_PLACE
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         dp_info = extra.get(DecimalPlaceValidator.name)
         dv = Decimal(str(value))
         dv_tup = dv.as_tuple()
         dv_dp = -1 * dv_tup.exponent if dv_tup.exponent < 0 else 0
-        return dv_dp <= dp_info, ValueError(
-            f'Expect decimal places({dp_info}) for value: {repr(value)}, ' f'but got {dv_dp}'
-        )
+        ok = dv_dp <= dp_info
+        info = '' if ok else ValueError(f'Expect decimal places({dp_info}) for value: {value!r}, ' f'but got {dv_dp}')
+        return ok, info
 
 
 class DateValidator(BaseValidator):
     name = DATE
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         try:
             dateutil.parser.parse(value).date()
             return True, ''
@@ -309,7 +342,7 @@ class DateRangeValidator(BaseValidator):
     name = DATE_RANGE
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         range_info = extra.get(DateRangeValidator.name)
         _raise_if_condition(
             type(range_info) != dict or ('min' not in range_info and 'max' not in range_info),
@@ -326,40 +359,44 @@ class DateRangeValidator(BaseValidator):
         min_date = dateutil.parser.parse(min_date_str).date()
         max_date = dateutil.parser.parse(max_date_str).date()
         value_date = dateutil.parser.parse(value).date()
-        return min_date <= value_date <= max_date, ValueError(
-            f'{repr(value)} is not in range {min_date_str} ~ {max_date_str}'
-        )
+        ok = min_date <= value_date <= max_date
+        info = '' if ok else ValueError(f'{repr(value)} is not in range {min_date_str} ~ {max_date_str}')
+        return ok, info
 
 
 class DigitStrValidator(BaseValidator):
     name = DIGIT_STR
 
     @staticmethod
-    def validate(value, extra, data):
-        return type(value) == str and value.isdigit(), TypeError(f'{repr(value)} is not a digit str')
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        ok = type(value) == str and value.isdigit()
+        info = '' if ok else TypeError(f'{repr(value)} is not a digit str')
+        return ok, info
 
 
 class AnyKeyExistsValidator(BaseValidator):
     name = ANY_KEY_EXISTS
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         sibling_keys = extra.get(AnyKeyExistsValidator.name, [])
-        return any(key in data for key in sibling_keys), ValueError(f'missing key in {sibling_keys} .')
+        ok = any(key in data for key in sibling_keys)
+        info = '' if ok else ValueError(f'missing key in {sibling_keys} .')
+        return ok, info
 
 
 class KeyCoexistsValidator(BaseValidator):
     name = KEY_COEXISTS
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         related_keys = extra.get(KeyCoexistsValidator.name, [])
         related_fields = [data.get(key, get_unknown_field_value()) for key in related_keys]
-        return (
-            all(not isinstance(related_field, UnknownFieldValue) for related_field in related_fields)
-            and not isinstance(value, UnknownFieldValue),
-            LookupError(f'Some coexisting keys {related_keys} missing.'),
-        )
+        ok = all(
+            not isinstance(related_field, UnknownFieldValue) for related_field in related_fields
+        ) and not isinstance(value, UnknownFieldValue)
+        info = '' if ok else LookupError(f'Some coexisting keys {related_keys} missing.')
+        return ok, info
 
 
 class EmailValidator(BaseValidator):
@@ -369,37 +406,37 @@ class EmailValidator(BaseValidator):
     regex = r'[a-zA-Z0-9.!#$%&\'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
 
     @staticmethod
-    def validate(value, extra, data):
-        return type(value) == str and re.fullmatch(EmailValidator.regex, value), ValueError(
-            f'{repr(value)} is not a valid email address'
-        )
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        ok = type(value) == str and re.fullmatch(EmailValidator.regex, value)
+        info = '' if ok else ValueError(f'{repr(value)} is not a valid email address')
+        return ok, info
 
 
 class UUIDValidator(BaseValidator):
     name = UUID
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         try:
             if not isinstance(value, uuid.UUID):
                 uuid.UUID(value)
-            ok = True
-        except Exception:
-            ok = False
-        return ok, ValueError(f'{repr(value)} is not an UUID object')
+            return True, ''
+        except Exception as e:
+            return False, ValueError(f'{repr(value)} is not an UUID object: {e.__str__}')
 
 
 class RegexValidator(BaseValidator):
     name = REGEX
 
     @staticmethod
-    def validate(value, extra, data):
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         regex_param = extra.get(RegexValidator.name, {})
         pattern = regex_param.get('pattern', '')
         match_method = regex_param.get('method', 'search')
         error_regex_param = regex_param.copy()
         error_regex_param['method'] = match_method
 
+        match_func = None
         if match_method == 'match':
             match_func = re.match
         elif match_method == 'fullmatch':
@@ -409,6 +446,6 @@ class RegexValidator(BaseValidator):
         else:
             _raise_if_condition(True, f'unsupported match method: {match_method}')
 
-        return type(value) == str and match_func(pattern, value), ValueError(
-            f'{repr(value)} does not match "{error_regex_param}"'
-        )
+        ok = type(value) == str and match_func and match_func(pattern, value)
+        info = '' if ok else ValueError(f'{repr(value)} does not match "{error_regex_param}"')
+        return ok, info

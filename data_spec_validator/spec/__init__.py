@@ -32,3 +32,4 @@ from .defines import (
     not_,
     reset_msg_level,
 )
+from .features import dsv_feature

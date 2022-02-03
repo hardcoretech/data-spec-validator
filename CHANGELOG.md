@@ -1,6 +1,15 @@
 Changelog
 =========
 
+1.5.0
+-----
+
+Changes:
+
+- Add type hints
+- Support strict mode to detect unexpected key/value parameters
+
+
 1.4.0
 -----
 

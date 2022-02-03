@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum
 from functools import lru_cache
+from typing import Dict, Type, Union
 
 # TYPE
 NONE = 'none'
@@ -36,11 +37,27 @@ _wrapper_splitter = '-'
 _not_prefix = 'not'
 
 
-def not_(check):
+class BaseWrapper:
+    def __init__(self, wrapped_func):
+        self.wrapped_func = wrapped_func
+
+
+class BaseValidator(metaclass=ABCMeta):
+    @staticmethod
+    @abstractmethod
+    def validate(value, extra, data):
+        raise NotImplementedError
+
+
+class UnknownFieldValue:
+    message = 'This field cannot be found in this SPEC'
+
+
+def not_(check) -> str:
     return _not_prefix + _wrapper_splitter + check
 
 
-def get_default_check_2_validator_map():
+def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
     from data_spec_validator.spec.validators import (
         AmountRangeValidator,
         AmountValidator,
@@ -96,7 +113,7 @@ def get_default_check_2_validator_map():
     }
 
 
-def _get_wrapper_cls_map():
+def _get_wrapper_cls_map() -> Dict[str, Type[BaseWrapper]]:
     from .wrappers import NotWrapper
 
     return {
@@ -104,7 +121,7 @@ def _get_wrapper_cls_map():
     }
 
 
-def _get_check_2_validator_map():
+def _get_check_2_validator_map() -> Dict[str, BaseValidator]:
     from .custom_spec.defines import get_custom_check_2_validator_map
 
     default_map = get_default_check_2_validator_map()
@@ -113,7 +130,7 @@ def _get_check_2_validator_map():
     return validator_map
 
 
-def get_validator(check):
+def get_validator(check) -> Union[BaseValidator, BaseWrapper]:
     found_idx = check.find(_wrapper_splitter)
     validator_map = _get_check_2_validator_map()
     ori_validator = validator_map.get(check[found_idx + 1 :], validator_map[DUMMY])
@@ -127,15 +144,8 @@ def get_validator(check):
 
 
 @lru_cache(1)
-def get_unknown_field_value():
+def get_unknown_field_value() -> UnknownFieldValue:
     return UnknownFieldValue()
-
-
-class BaseValidator(metaclass=ABCMeta):
-    @staticmethod
-    @abstractmethod
-    def validate(value, extra, data):
-        raise NotImplementedError
 
 
 class ValidateResult:
@@ -148,7 +158,7 @@ class ValidateResult:
         self.__error = error
 
     @property
-    def field(self):
+    def field(self) -> str:
         return self.__field
 
     @property
@@ -156,12 +166,8 @@ class ValidateResult:
         return self.__value
 
     @property
-    def error(self):
+    def error(self) -> Exception:
         return self.__error
-
-
-class UnknownFieldValue:
-    message = 'This field cannot be found in this SPEC'
 
 
 class CheckerOP(Enum):
@@ -194,19 +200,19 @@ class Checker:
             raise ValueError('Require at least 1 check when set optional to True')
 
     @property
-    def allow_none(self):
+    def allow_none(self) -> bool:
         return self._allow_none
 
     @property
-    def allow_optional(self):
+    def allow_optional(self) -> bool:
         return self._optional
 
     @property
-    def is_op_any(self):
+    def is_op_any(self) -> bool:
         return self._op == CheckerOP.ANY
 
     @property
-    def is_op_all(self):
+    def is_op_all(self) -> bool:
         return self._op == CheckerOP.ALL
 
 
@@ -219,7 +225,7 @@ class MsgLv(Enum):
 __message_level = MsgLv.DEFAULT
 
 
-def get_msg_level():
+def get_msg_level() -> MsgLv:
     return __message_level
 
 

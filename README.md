@@ -141,6 +141,25 @@ validate_data_spec(ok_data, GreaterThanSpec) # raise Exception
 "field: XXX not well-formatted"
 ```
 
+
+### Strict Mode
+
+- A spec class decorated with `dsv_feature(strict=True)` detects unexpected key/value in data
+```python
+from data_spec_validator.spec import Checker, validate_data_spec, dsv_feature, BOOL
+
+@dsv_feature(strict=True)
+class StrictSpec:
+    a = Checker([BOOL])
+
+ok_data = dict(a=True)
+validate_data_spec(ok_data, StrictSpec) # return True
+
+nok_data = dict(a=True, b=1)
+validate_data_spec(nok_data, StrictSpec) # raise Exception
+```
+
+
 ## Test
 ```bash
 python -m unittest test.test_spec

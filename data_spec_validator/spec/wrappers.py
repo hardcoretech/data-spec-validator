@@ -1,16 +1,12 @@
-from .defines import BaseValidator
+from typing import Tuple
 
-
-class BaseWrapper:
-    def __init__(self, wrapped_func):
-        self.wrapped_func = wrapped_func
+from .defines import BaseValidator, BaseWrapper
 
 
 class NotWrapper(BaseWrapper, BaseValidator):
     name = 'not'
 
-    def validate(self, value, extra, data):
+    def validate(self, value, extra, data) -> Tuple[bool, Exception]:
         ok, error = self.wrapped_func(value, extra, data)
-        msg = ''.join(error.args)
-        new_error = type(error)(f'not({msg})')
-        return not ok, new_error
+        info = '' if not ok else TypeError(f'Value({value}) should not pass {self.wrapped_func.__str__()}')
+        return not ok, info
