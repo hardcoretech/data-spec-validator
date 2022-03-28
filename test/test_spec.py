@@ -1192,38 +1192,37 @@ class TestCustomSpec(unittest.TestCase):
 
 
 class TestCheckKeyword(unittest.TestCase):
-
     def test_check_keyword_must_upper_case(self):
         assert Checker([STR], WHAT_EVER=True, MUST_BE_UPPER={'1': 1, '2': 2}, CASE=[1, 2])
 
         with self.assertRaises(TypeError):
-            _chk = Checker([STR], WHAT_eVER=True)
+            Checker([STR], WHAT_eVER=True)
 
     def test_blacklist_check_keyword(self):
         with self.assertRaises(TypeError):
-            _chk = Checker([STR], ALLOW_NONE=True)
+            Checker([STR], ALLOW_NONE=True)
 
         with self.assertRaises(TypeError):
-            _chk = Checker([STR], OP='SOME_OP')
+            Checker([STR], OP='SOME_OP')
 
         with self.assertRaises(TypeError):
-            _chk = Checker([STR], OPTIONAL=True)
+            Checker([STR], OPTIONAL=True)
 
         with self.assertRaises(TypeError):
-            _chk = Checker([STR], EXTRA=dict())
+            Checker([STR], EXTRA=dict())
 
     def test_repeated_check_keyword(self):
         with self.assertRaises(TypeError):
-            _chk = Checker([STR], optional=True, OPTIONAL=False)
+            Checker([STR], optional=True, OPTIONAL=False)
 
         with self.assertRaises(TypeError):
-            _chk = Checker([STR], op=CheckerOP.ANY, OP=CheckerOP.ALL)
+            Checker([STR], op=CheckerOP.ANY, OP=CheckerOP.ALL)
 
         with self.assertRaises(TypeError):
-            _chk = Checker([STR], allow_none=True, ALLOW_NONE=False)
+            Checker([STR], allow_none=True, ALLOW_NONE=False)
 
         with self.assertRaises(TypeError):
-            _chk = Checker([ONE_OF], extra={ONE_OF: [1, 2]}, EXTRA={ONE_OF: [1, 2]})
+            Checker([ONE_OF], extra={ONE_OF: [1, 2]}, EXTRA={ONE_OF: [1, 2]})
 
 
 class TestMessageLevel(unittest.TestCase):

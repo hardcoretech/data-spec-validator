@@ -7,7 +7,7 @@ try:
     from django.views.generic.base import View
     from rest_framework.request import Request
 except ModuleNotFoundError as e:
-    print(f'[WARNING] decorator: "dsv" cannot be used, {e}')
+    print(f'[DSV][WARNING] decorator: "dsv" cannot be used, {e}')
 from data_spec_validator.spec import validate_data_spec
 
 

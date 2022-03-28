@@ -21,7 +21,7 @@ def register(check_2_validator_map) -> bool:
         if check in _custom_map:
             ori_validator = _custom_map[check]
             print(
-                f'[WARNING] Check({check}) already exists, gonna overwrite the validator from '
+                f'[DSV][WARNING] Check({check}) already exists, gonna overwrite the validator from '
                 f'{_get_class_name(ori_validator)} to {_get_class_name(validator)}'
             )
         _custom_map[check] = validator

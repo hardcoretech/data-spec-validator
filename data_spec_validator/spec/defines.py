@@ -194,7 +194,7 @@ class Checker:
 
         self._ensure(kwargs)
         if extra:
-            print(f'[WARNING] keyword: extra is gonna be deprecated')
+            print('[DSV][WARNING] keyword: extra is gonna be deprecated')
         self.extra = self._merge_extra_kwargs(extra or {}, kwargs)
 
     @staticmethod
