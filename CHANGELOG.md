@@ -1,6 +1,15 @@
 Changelog
 =========
 
+1.6.0
+-----
+
+Changes:
+
+- Support checks as keyword argument when building checker.
+- Add test cases.
+
+
 1.5.0
 -----
 
