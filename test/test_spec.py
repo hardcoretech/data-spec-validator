@@ -1208,21 +1208,9 @@ class TestCheckKeyword(unittest.TestCase):
         with self.assertRaises(TypeError):
             Checker([STR], OPTIONAL=True)
 
-        with self.assertRaises(TypeError):
-            Checker([STR], EXTRA=dict())
-
-    def test_repeated_check_keyword(self):
-        with self.assertRaises(TypeError):
-            Checker([STR], optional=True, OPTIONAL=False)
-
-        with self.assertRaises(TypeError):
-            Checker([STR], op=CheckerOP.ANY, OP=CheckerOP.ALL)
-
-        with self.assertRaises(TypeError):
-            Checker([STR], allow_none=True, ALLOW_NONE=False)
-
-        with self.assertRaises(TypeError):
-            Checker([ONE_OF], extra={ONE_OF: [1, 2]}, EXTRA={ONE_OF: [1, 2]})
+        with self.assertRaises(TypeError) as cm:
+            Checker([ONE_OF], op=CheckerOP.ANY, OP='SOME_OP', extra={ONE_OF: [1, 2]}, EXTRA={ONE_OF: [1, 2]})
+        self.assertEqual('Forbidden keyword arguments: EXTRA, OP', str(cm.exception))
 
 
 class TestMessageLevel(unittest.TestCase):

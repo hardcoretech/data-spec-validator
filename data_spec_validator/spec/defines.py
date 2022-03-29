@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum
-from functools import lru_cache
+from functools import lru_cache, reduce
 from typing import Dict, Type, Union
 
 # TYPE
@@ -216,10 +216,16 @@ class Checker:
 
         def __ensure_no_repeated_forbidden(_kwargs):
             blacklist = {'optional', 'allow_none', 'op', 'extra'}
-            arg_keys = set(map(lambda k: k.lower(), _kwargs.keys()))
-            unexpected = blacklist.intersection(arg_keys)
-            if unexpected:
-                raise TypeError(f'Forbidden or Repeated lower-cased keyword arguments: {unexpected}')
+
+            def _check_in_blacklist(acc, key):
+                if key.lower() in blacklist:
+                    acc.add(key)
+                return acc
+
+            forbidden = list(reduce(_check_in_blacklist, _kwargs.keys(), set()))
+            if forbidden:
+                forbidden.sort()
+                raise TypeError(f'Forbidden keyword arguments: {", ".join(forbidden)}')
 
         if self._optional and len(self.checks) == 0:
             raise ValueError('Require at least 1 check when set optional to True')
