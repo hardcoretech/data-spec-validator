@@ -40,7 +40,7 @@ pip install data-spec-validator[decorator]
 ```
 
 ## Quick Example
-* Do `validate_data_spec` directly wherever you like (see `test_spect.py` for more)
+* Do `validate_data_spec` directly wherever you like
 ```python
 from data_spec_validator.spec import INT, DIGIT_STR, ONE_OF, Checker, CheckerOP, validate_data_spec
 
@@ -65,7 +65,7 @@ some_data = dict(field_a='4', field_c='1')
 validate_data_spec(some_data, SomeSpec, nothrow=True) # return False
 
 class AnotherSpec:
-    field = Checker([ONE_OF], extra={ONE_OF: [1, '2', [3, 4], {'5': 6}]})
+    field = Checker([ONE_OF], ONE_OF=[1, '2', [3, 4], {'5': 6}])
 
 another_data = dict(field=[3, 4])
 validate_data_spec(another_data, AnotherSpec) # return True
@@ -73,6 +73,82 @@ validate_data_spec(another_data, AnotherSpec) # return True
 another_data = dict(field='4')
 validate_data_spec(another_data, AnotherSpec) # raise Exception
 ```
+
+* Supported checks & sample usages (see `test_spec.py` for more cases)
+```
+# INT
+int_field = Checker([INT])
+
+# STR
+str_field = Checker([STR])
+
+# DIGIT_STR
+digi_str_field = Checker([DIGIT_STR])
+
+# BOOL
+bool_field = Checker([BOOL])
+
+# DICT
+dict_field = Checker([DICT])
+
+# LIST
+list_field = Checker([LIST])
+
+# NONE
+none_field = Checker([NONE])
+
+# JSON
+none_field = Checker([JSON])
+
+# JSON_BOOL
+none_field = Checker([JSON_BOOL])
+
+# ONE_OF
+one_of_field = Checker([ONE_OF], ONE_OF=['a', 'b', 'c'])
+
+# SPEC
+spec_field = Checker([SPEC], SPEC=SomeSpecClass)
+
+# LIST_OF
+list_of_int_field = Checker([LIST_OF], LIST_OF=INT)
+list_of_spec_field = Checker([LIST_OF], LIST_OF=SomeSpecClass)
+
+# LENGTH
+length_field = Checker([LENGTH], LENGTH=dict(min=3, max=5))
+
+# AMOUNT
+amount_field = Checker([AMOUNT])
+
+# AMOUNT_RANGE
+amount_range_field = Checker([AMOUNT_RANGE], AMOUNT_RANGE=dict(min=-2.1, max=3.8))
+
+# DECIMAL_PLACE
+decimal_place_field = Checker([DECIMAL_PLACE], DECIMAL_PLACE=4)
+
+# DATE
+date_field = Checker([DATE])
+
+# DATE_RANGE
+date_range_field = Checker([DATE_RANGE], DATE_RANGE=dict(min='2000-01-01', max='2010-12-31'))
+
+# ANY_KEY_EXISTS
+any_key_checker = Checker([ANY_KEY_EXISTS], ANY_KEY_EXISTS={'key1', 'key2', 'key3'})
+
+# KEY_COEXISTS
+key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])
+
+# EMAIL
+email_field = Checker([EMAIL])
+
+# UUID
+uuid_field = Checker([UUID])
+
+# REGEX
+re_field = Checker([REGEX], REGEX=dict(pattern=r'^The'))
+re_field = Checker([REGEX], REGEX=dict(pattern=r'watch out', method='match'))
+```
+
+
 
 
 * Decorate a method with `dsv`, the method must meet one of the following requirements.
@@ -122,7 +198,7 @@ from data_spec_validator.spec import custom_spec, Checker, validate_data_spec
 custom_spec.register(dict(gt_check=GreaterThanValidator()))
 
 class GreaterThanSpec:
-    key = Checker([gt_check], extra={gt_check: 10})
+    key = Checker(['gt_check'], GT_CHECK=10)
 
 ok_data = dict(key=11)
 validate_data_spec(ok_data, GreaterThanSpec) # return True

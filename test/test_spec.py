@@ -130,6 +130,13 @@ class TestSpec(unittest.TestCase):
 
             return SelfSpec
 
+        def _get_no_extra_self_spec():
+            class SelfSpec:
+                next_field = Checker([SPEC], optional=True, SPEC=SELF)
+                children = Checker([LIST_OF], optional=True, LIST_OF=SPEC, SPEC=SELF)
+
+            return SelfSpec
+
         ok_data = dict(
             next_field=dict(
                 next_field=dict(
@@ -149,9 +156,11 @@ class TestSpec(unittest.TestCase):
             ],
         )
         assert validate_data_spec(ok_data, _get_self_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_self_spec())
 
         nok_data = dict(next_field=dict(next_field=0))
         assert is_something_error(Exception, validate_data_spec, nok_data, _get_self_spec())
+        assert is_something_error(Exception, validate_data_spec, nok_data, _get_no_extra_self_spec())
 
     def test_list(self):
         def _get_list_spec():
@@ -212,19 +221,29 @@ class TestSpec(unittest.TestCase):
 
             return AmountRangeSpec
 
+        def _get_no_extra_amount_range_spec():
+            class AmountRangeSpec:
+                amount_range_field = Checker([AMOUNT_RANGE], AMOUNT_RANGE=dict(min=-2.1, max=3.8))
+
+            return AmountRangeSpec
+
         ok_data = dict(
             amount_range_field='3.8',
         )
         assert validate_data_spec(ok_data, _get_amount_range_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_amount_range_spec())
 
         ok_data = dict(amount_range_field=-2.1)
         assert validate_data_spec(ok_data, _get_amount_range_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_amount_range_spec())
 
         nok_data = dict(amount_range_field='-2.2')
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_amount_range_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_amount_range_spec())
 
         nok_data = dict(amount_range_field='3.81')
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_amount_range_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_amount_range_spec())
 
     def test_length(self):
         def _get_length_spec():
@@ -233,17 +252,27 @@ class TestSpec(unittest.TestCase):
 
             return LengthSpec
 
+        def _get_no_extra_length_spec():
+            class LengthSpec:
+                length_field = Checker([LENGTH], LENGTH=dict(min=3, max=5))
+
+            return LengthSpec
+
         ok_data = dict(length_field='3.2')
         assert validate_data_spec(ok_data, _get_length_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_length_spec())
 
         ok_data = dict(length_field='3.141')
         assert validate_data_spec(ok_data, _get_length_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_length_spec())
 
         nok_data = dict(length_field='ah')
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_length_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_length_spec())
 
         nok_data = dict(length_field='exceed')
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_length_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_length_spec())
 
     def test_decimal_place(self):
         def _get_decimal_place_spec():
@@ -252,14 +281,23 @@ class TestSpec(unittest.TestCase):
 
             return DecimalPlaceSpec
 
+        def _get_no_extra_decimal_place_spec():
+            class DecimalPlaceSpec:
+                decimal_place_field = Checker([DECIMAL_PLACE], DECIMAL_PLACE=4)
+
+            return DecimalPlaceSpec
+
         ok_data = dict(decimal_place_field=3.123)
         assert validate_data_spec(ok_data, _get_decimal_place_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_decimal_place_spec())
 
         ok_data = dict(decimal_place_field=3.1234)
         assert validate_data_spec(ok_data, _get_decimal_place_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_decimal_place_spec())
 
         nok_data = dict(decimal_place_field=3.12345)
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_decimal_place_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_decimal_place_spec())
 
     def test_date(self):
         def _get_date_spec():
@@ -290,17 +328,30 @@ class TestSpec(unittest.TestCase):
 
             return DateRangeSpec
 
+        def _get_no_extra_date_range_spec():
+            class DateRangeSpec:
+                date_range_field = Checker(
+                    [DATE_RANGE],
+                    DATE_RANGE=dict(min='2000-01-01', max='2010-12-31'),
+                )
+
+            return DateRangeSpec
+
         ok_data = dict(date_range_field='2000-1-1')
         assert validate_data_spec(ok_data, _get_date_range_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_date_range_spec())
 
         ok_data = dict(date_range_field='2005-12-31')
         assert validate_data_spec(ok_data, _get_date_range_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_date_range_spec())
 
         ok_data = dict(date_range_field='2010-12-31')
         assert validate_data_spec(ok_data, _get_date_range_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_date_range_spec())
 
         nok_data = dict(date_range_field='1999-12-31')
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_date_range_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_date_range_spec())
 
     def test_nested_spec(self):
         def _get_spec():
@@ -321,6 +372,24 @@ class TestSpec(unittest.TestCase):
 
             return RootSpec
 
+        def _get_no_extra_spec():
+            class LeafSpec:
+                int_field = Checker([INT])
+                str_field = Checker([STR])
+                bool_field = Checker([BOOL])
+
+            class MidLeafSpec:
+                int_field = Checker([INT])
+                str_field = Checker([STR])
+                leaf_field = Checker([SPEC], SPEC=LeafSpec)
+
+            class RootSpec:
+                int_field = Checker([INT])
+                mid_leaf_field = Checker([SPEC], SPEC=MidLeafSpec)
+                bool_field = Checker([BOOL])
+
+            return RootSpec
+
         ok_data = dict(
             int_field=1,
             mid_leaf_field=dict(
@@ -335,6 +404,7 @@ class TestSpec(unittest.TestCase):
             bool_field=False,
         )
         assert validate_data_spec(ok_data, _get_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_spec())
 
         nok_data = dict(
             int_field=1,
@@ -350,6 +420,7 @@ class TestSpec(unittest.TestCase):
             bool_field=False,
         )
         assert is_something_error(LookupError, validate_data_spec, nok_data, _get_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_spec())
 
         nok_data = dict(
             int_field=1,
@@ -365,6 +436,7 @@ class TestSpec(unittest.TestCase):
             bool_field=False,
         )
         assert is_something_error(LookupError, validate_data_spec, nok_data, _get_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_spec())
 
     def test_list_of(self):
         def _get_list_of_spec_spec():
@@ -377,6 +449,16 @@ class TestSpec(unittest.TestCase):
 
             return ParentSpec
 
+        def _get_no_extra_list_of_spec_spec():
+            class ChildSpec:
+                int_field = Checker([INT])
+                bool_field = Checker([BOOL])
+
+            class ParentSpec:
+                list_of_spec_field = Checker([LIST_OF], LIST_OF=SPEC, SPEC=ChildSpec)
+
+            return ParentSpec
+
         ok_data = dict(
             list_of_spec_field=[
                 dict(int_field=1, bool_field=False),
@@ -385,6 +467,7 @@ class TestSpec(unittest.TestCase):
             ]
         )
         assert validate_data_spec(ok_data, _get_list_of_spec_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_list_of_spec_spec())
 
         nok_data = dict(
             list_of_spec_field=[
@@ -393,6 +476,7 @@ class TestSpec(unittest.TestCase):
             ]
         )
         assert is_something_error(TypeError, validate_data_spec, nok_data, _get_list_of_spec_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_no_extra_list_of_spec_spec())
 
         def _get_list_of_int_spec():
             class ListOfIntSpec:
@@ -400,11 +484,19 @@ class TestSpec(unittest.TestCase):
 
             return ListOfIntSpec
 
+        def _get_no_extra_list_of_int_spec():
+            class ListOfIntSpec:
+                list_of_int_field = Checker([LIST_OF], LIST_OF=INT)
+
+            return ListOfIntSpec
+
         ok_data = dict(list_of_int_field=[1, 2, 3])
         assert validate_data_spec(ok_data, _get_list_of_int_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_list_of_int_spec())
 
         nok_data = dict(list_of_int_field=[1, 2, '3'])
         assert is_something_error(TypeError, validate_data_spec, nok_data, _get_list_of_int_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_no_extra_list_of_int_spec())
 
     def test_one_of(self):
         def _get_one_of_spec():
@@ -413,20 +505,31 @@ class TestSpec(unittest.TestCase):
 
             return OneOfSpec
 
+        def _get_no_extra_one_of_spec():
+            class OneOfSpec:
+                one_of_spec_field = Checker([ONE_OF], ONE_OF=[1, '2', [3, 4], {'5': 6}])
+
+            return OneOfSpec
+
         ok_data = dict(one_of_spec_field=1)
         assert validate_data_spec(ok_data, _get_one_of_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_one_of_spec())
 
         ok_data = dict(one_of_spec_field='2')
         assert validate_data_spec(ok_data, _get_one_of_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_one_of_spec())
 
         ok_data = dict(one_of_spec_field=[3, 4])
         assert validate_data_spec(ok_data, _get_one_of_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_one_of_spec())
 
         ok_data = dict(one_of_spec_field={'5': 6})
         assert validate_data_spec(ok_data, _get_one_of_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_one_of_spec())
 
         nok_data = dict(one_of_spec_field=6)
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_one_of_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_one_of_spec())
 
     def test_json(self):
         def _get_json_spec():
@@ -490,14 +593,23 @@ class TestSpec(unittest.TestCase):
 
             return AllSpec
 
+        def _get_no_extra_all_spec():
+            class AllSpec:
+                all_field = Checker([LENGTH, STR, AMOUNT], LENGTH=dict(min=3, max=5))
+
+            return AllSpec
+
         ok_data = dict(all_field='1.234')
         assert validate_data_spec(ok_data, _get_all_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_all_spec())
 
         ok_data = dict(all_field='12345')
         assert validate_data_spec(ok_data, _get_all_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_all_spec())
 
         nok_data = dict(all_field='123456')
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_all_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_all_spec())
 
     def test_op_any(self):
         def _get_any_spec():
@@ -566,6 +678,13 @@ class TestSpec(unittest.TestCase):
 
             return SimpleRegexSpec1
 
+        # Just test SINGLE ONE regex spec for convenience
+        def _get_no_extra_symbol_spec1():
+            class SimpleRegexSpec1:
+                re_field = Checker([REGEX], REGEX=dict(pattern=r'^The'))
+
+            return SimpleRegexSpec1
+
         def _get_symbol_spec2():
             class SimpleRegexSpec2:
                 re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'of the world$')})
@@ -586,10 +705,13 @@ class TestSpec(unittest.TestCase):
 
         ok_data = dict(re_field='The')
         assert validate_data_spec(ok_data, _get_symbol_spec1())
+        assert validate_data_spec(ok_data, _get_no_extra_symbol_spec1())
         nok_data = dict(re_field='That cat is cute')
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec1())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_symbol_spec1())
         nok_data = dict(re_field='I am the king of dogs')
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec1())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_symbol_spec1())
 
         ok_data = dict(re_field='of the world')
         assert validate_data_spec(ok_data, _get_symbol_spec2())
@@ -872,14 +994,23 @@ class TestSpec(unittest.TestCase):
 
             return AnyKeyExistsSpec
 
+        def _get_no_extra_any_key_exists_spec():
+            class AnyKeyExistsSpec:
+                test_checker = Checker([ANY_KEY_EXISTS], ANY_KEY_EXISTS={'key1', 'key2', 'key3'})
+
+            return AnyKeyExistsSpec
+
         ok_data = dict(key1=1)
         assert validate_data_spec(ok_data, _get_any_key_exists_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_any_key_exists_spec())
 
         ok_data = dict(key2=1, key3=1)
         assert validate_data_spec(ok_data, _get_any_key_exists_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_any_key_exists_spec())
 
         nok_data = dict(key=1)
         assert is_something_error(LookupError, validate_data_spec, nok_data, _get_any_key_exists_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_any_key_exists_spec())
 
     def test_key_coexist(self):
         def _get_key_coexist_spec():
@@ -888,14 +1019,23 @@ class TestSpec(unittest.TestCase):
 
             return KeyCoexistsSpec
 
+        def _get_no_extra_key_coexist_spec():
+            class KeyCoexistsSpec:
+                key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])
+
+            return KeyCoexistsSpec
+
         ok_data = dict(key1=1, key2=1)
         assert validate_data_spec(ok_data, _get_key_coexist_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_key_coexist_spec())
 
         nok_data = dict(key2=1)
         assert is_something_error(LookupError, validate_data_spec, nok_data, _get_key_coexist_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_key_coexist_spec())
 
         nok_data = dict(key=1)
         assert is_something_error(LookupError, validate_data_spec, nok_data, _get_key_coexist_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_key_coexist_spec())
 
     def test_not_checker(self):
         def _get_non_bool_spec():
@@ -1036,11 +1176,41 @@ class TestCustomSpec(unittest.TestCase):
 
             return GreaterThanSpec
 
+        def _get_no_extra_gt_10_spec():
+            class GreaterThanSpec:
+                key = Checker([gt_check], GT_CHECK=10)
+
+            return GreaterThanSpec
+
         ok_data = dict(key=11)
         assert validate_data_spec(ok_data, _get_gt_10_spec())
+        assert validate_data_spec(ok_data, _get_no_extra_gt_10_spec())
 
         nok_data = dict(key=10)
         assert is_something_error(ValueError, validate_data_spec, nok_data, _get_gt_10_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_gt_10_spec())
+
+
+class TestCheckKeyword(unittest.TestCase):
+    def test_check_keyword_must_upper_case(self):
+        assert Checker([STR], WHAT_EVER=True, MUST_BE_UPPER={'1': 1, '2': 2}, CASE=[1, 2])
+
+        with self.assertRaises(TypeError):
+            Checker([STR], WHAT_eVER=True)
+
+    def test_blacklist_check_keyword(self):
+        with self.assertRaises(TypeError):
+            Checker([STR], ALLOW_NONE=True)
+
+        with self.assertRaises(TypeError):
+            Checker([STR], OP='SOME_OP')
+
+        with self.assertRaises(TypeError):
+            Checker([STR], OPTIONAL=True)
+
+        with self.assertRaises(TypeError) as cm:
+            Checker([ONE_OF], op=CheckerOP.ANY, OP='SOME_OP', extra={ONE_OF: [1, 2]}, EXTRA={ONE_OF: [1, 2]})
+        self.assertEqual('Forbidden keyword arguments: EXTRA, OP', str(cm.exception))
 
 
 class TestMessageLevel(unittest.TestCase):

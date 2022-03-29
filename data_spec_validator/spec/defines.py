@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum
-from functools import lru_cache
+from functools import lru_cache, reduce
 from typing import Dict, Type, Union
 
 # TYPE
@@ -177,7 +177,7 @@ class CheckerOP(Enum):
 
 
 class Checker:
-    def __init__(self, checks, optional=False, allow_none=False, op=CheckerOP.ALL, extra=None):
+    def __init__(self, checks, optional=False, allow_none=False, op=CheckerOP.ALL, extra=None, **kwargs):
         """
         checks: list of str(Check)
         optional: boolean
@@ -191,13 +191,47 @@ class Checker:
         self._op = op
         self._optional = optional
         self._allow_none = allow_none
-        self.extra = extra or {}
 
-        self._ensure()
+        self._ensure(kwargs)
+        if extra:
+            print('[DSV][WARNING] keyword: extra is gonna be deprecated')
+        self.extra = self._merge_extra_kwargs(extra or {}, kwargs)
 
-    def _ensure(self):
+    @staticmethod
+    def _merge_extra_kwargs(deprecated_extra: dict, check_kwargs: dict) -> dict:
+        extra = deprecated_extra.copy()
+
+        all_keys = set(_get_check_2_validator_map().keys())
+        for arg_k, arg_v in check_kwargs.items():
+            lower_arg_k = arg_k.lower()
+            if lower_arg_k in all_keys:
+                extra[lower_arg_k] = arg_v
+        return extra
+
+    def _ensure(self, check_kwargs):
+        def __ensure_upper_case(_kwargs):
+            non_upper = list(filter(lambda k: not k.isupper(), _kwargs.keys()))
+            if non_upper:
+                raise TypeError(f'Keyword must be upper-cased: {non_upper}')
+
+        def __ensure_no_repeated_forbidden(_kwargs):
+            blacklist = {'optional', 'allow_none', 'op', 'extra'}
+
+            def _check_in_blacklist(acc, key):
+                if key.lower() in blacklist:
+                    acc.add(key)
+                return acc
+
+            forbidden = list(reduce(_check_in_blacklist, _kwargs.keys(), set()))
+            if forbidden:
+                forbidden.sort()
+                raise TypeError(f'Forbidden keyword arguments: {", ".join(forbidden)}')
+
         if self._optional and len(self.checks) == 0:
             raise ValueError('Require at least 1 check when set optional to True')
+
+        __ensure_upper_case(check_kwargs)
+        __ensure_no_repeated_forbidden(check_kwargs)
 
     @property
     def allow_none(self) -> bool:
