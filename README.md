@@ -243,7 +243,7 @@ validate_data_spec(nok_data, StrictSpec) # raise Exception
 
 ### Feature: Any Keys Set
 
-- A spec class decorated with `dsv_feature(any_keys_set={...})` means that at least one key of the tuple of keys from the set must exist. 
+- A spec class decorated with e.g. `dsv_feature(any_keys_set={...})` means that at least one key among a keys tuple from the set must exist.
 ```python
 from data_spec_validator.spec import Checker, validate_data_spec, dsv_feature, INT
 

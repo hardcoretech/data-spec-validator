@@ -1,4 +1,4 @@
-from typing import Union, Tuple, Set, Optional, Type, Callable
+from typing import Callable, Optional, Set, Tuple, Type, Union
 
 
 class _DSVFeatureParams:
@@ -31,7 +31,6 @@ def _process_class(cls: Type, strict: bool, any_keys_set: Union[Set[Tuple[str, .
 
 
 def dsv_feature(strict: bool = False, any_keys_set: Optional[Set[Tuple[str, ...]]] = None) -> Callable:
-
     def wrap(cls: Type) -> Type:
         return _process_class(cls, strict, any_keys_set)
 
@@ -46,4 +45,3 @@ def is_strict(spec) -> bool:
 def get_any_keys_set(spec) -> Set[Tuple[str, ...]]:
     feat_params: Union[_DSVFeatureParams, None] = getattr(spec, _FEAT_PARAMS, None)
     return feat_params.any_keys_set if feat_params else set()
-
