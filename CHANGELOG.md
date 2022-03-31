@@ -1,6 +1,17 @@
 Changelog
 =========
 
+1.7.0
+-----
+
+Changes:
+
+- Add new check COND_EXIST to support conditional key existence. More sample usage in test.
+- Add deprecating messages for Check: KEY_COEXISTS, ANY_KEY_EXISTS
+- Add test cases.
+- DEPRECATIONS: KEY_COEXISTS, ANY_KEY_EXISTS will be removed in 1.8.0 
+
+
 1.6.0
 -----
 

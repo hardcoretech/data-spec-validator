@@ -32,6 +32,7 @@ from .defines import (
     SPEC,
     STR,
     UUID,
+    COND_EXIST,
     BaseValidator,
     UnknownFieldValue,
     ValidateResult,
@@ -76,7 +77,11 @@ def __validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
     value = _extract_value(checks, data, field)
 
     results = []
-    if value == get_unknown_field_value() and checker.allow_optional:
+
+    if COND_EXIST in checks and checker.allow_optional:
+        extra['ALLOW_UNKNOWN'] = True
+
+    if value == get_unknown_field_value() and checker.allow_optional and COND_EXIST not in checks:
         # Pass the checker's validation directly
         pass
     elif value is None and checker.allow_none:
@@ -449,3 +454,36 @@ class RegexValidator(BaseValidator):
         ok = type(value) == str and match_func and match_func(pattern, value)
         info = '' if ok else ValueError(f'{repr(value)} does not match "{error_regex_param}"')
         return ok, info
+
+
+class CondExistValidator(BaseValidator):
+    name = COND_EXIST
+
+    @staticmethod
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        allow_unknown = extra.get('ALLOW_UNKNOWN', False)
+        params = extra.get(CondExistValidator.name, {})
+        any_keys = params.get('ANY', [])
+        must_with_keys = params.get('WITH', [])
+        must_without_keys = params.get('WITHOUT', [])
+
+        if isinstance(value, UnknownFieldValue) and not allow_unknown:
+            return False, LookupError('must exist')
+
+        ok = True
+        msg = ''
+        if must_with_keys and not isinstance(value, UnknownFieldValue):
+            ok = all([key in data for key in must_with_keys])
+            msg = f'{", ".join(must_with_keys)} must exist' if not ok else msg
+
+        if must_without_keys and not isinstance(value, UnknownFieldValue):
+            ok = ok and all([key not in data for key in must_without_keys])
+            msg = f'{", ".join(must_without_keys)} must not exist' if not ok else msg
+
+        if any_keys and isinstance(value, UnknownFieldValue):
+            ok = ok and any([key in data for key in any_keys])
+            msg = f'Or {", ".join(any_keys)} must exist' if not ok else msg
+
+        info = '' if ok else KeyError(msg)
+        return ok, info
+

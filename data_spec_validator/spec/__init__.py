@@ -6,6 +6,7 @@ from .defines import (
     AMOUNT_RANGE,
     ANY_KEY_EXISTS,
     BOOL,
+    COND_EXIST,
     DATE,
     DATE_RANGE,
     DECIMAL_PLACE,
