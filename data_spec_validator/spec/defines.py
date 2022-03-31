@@ -65,6 +65,7 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         AmountValidator,
         AnyKeyExistsValidator,
         BoolValidator,
+        CondExistValidator,
         DateRangeValidator,
         DateValidator,
         DecimalPlaceValidator,
@@ -85,7 +86,6 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         SpecValidator,
         StrValidator,
         UUIDValidator,
-        CondExistValidator,
     )
 
     return {

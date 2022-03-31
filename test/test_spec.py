@@ -1118,16 +1118,40 @@ class TestSpec(unittest.TestCase):
         )
         assert is_something_error(ValueError, validate_data_spec, nok_data_leaf, _RootStrictSpec)
 
-    def test_conditional_existence2(self):
-        class _CondExist:
-            a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(ANY=['b']))
-            b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(ANY=['a']))
+    def test_any_keys_set(self):
+        @dsv_feature(any_keys_set={('a', 'b')})
+        class _AnyKeysSetSpec:
+            a = Checker([INT], optional=True)
+            b = Checker([INT], optional=True)
 
-        assert validate_data_spec(dict(a=1, b=1), _CondExist)
-        assert validate_data_spec(dict(a=1), _CondExist)
-        assert validate_data_spec(dict(b=1), _CondExist)
+        assert validate_data_spec(dict(a=1, b=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(b=1), _AnyKeysSetSpec)
 
-        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _CondExist)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _AnyKeysSetSpec)
+
+        @dsv_feature(any_keys_set={('a', 'b'), ('c', 'd')})
+        class _AnyKeysSetSpec:
+            a = Checker([INT], optional=True)
+            b = Checker([INT], optional=True)
+            c = Checker([INT], optional=True)
+            d = Checker([INT], optional=True)
+
+        assert validate_data_spec(dict(a=1, c=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, c=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(b=1, c=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(b=1, c=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(b=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, b=1, c=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, b=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, b=1, c=1, d=1), _AnyKeysSetSpec)
+
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1), _AnyKeysSetSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1), _AnyKeysSetSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _AnyKeysSetSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(d=1), _AnyKeysSetSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(e=1), _AnyKeysSetSpec)
 
     def test_conditional_existence(self):
         """

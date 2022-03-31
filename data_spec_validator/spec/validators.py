@@ -11,6 +11,7 @@ from .defines import (
     AMOUNT_RANGE,
     ANY_KEY_EXISTS,
     BOOL,
+    COND_EXIST,
     DATE,
     DATE_RANGE,
     DECIMAL_PLACE,
@@ -32,14 +33,13 @@ from .defines import (
     SPEC,
     STR,
     UUID,
-    COND_EXIST,
     BaseValidator,
     UnknownFieldValue,
     ValidateResult,
     get_unknown_field_value,
     get_validator,
 )
-from .features import is_strict
+from .features import get_any_keys_set, is_strict
 
 
 def _raise_if_condition(condition, message, error_cls=RuntimeError):
@@ -117,6 +117,16 @@ def _validate_spec_features(data, fields, spec) -> Tuple[bool, List[ValidateResu
         if unexpected:
             error = ValueError(f'Unexpected field keys({unexpected}) found in strict mode spec')
             return False, [ValidateResult(spec, unexpected, data, 'strict', error)]
+
+    any_keys_set = get_any_keys_set(spec)
+    if any_keys_set:
+        data_keys = set(data.keys())
+        for keys in any_keys_set:
+            if data_keys.isdisjoint(set(keys)):
+                str_keys = ", ".join(keys)
+                error = KeyError('At least one of these fields must exist')
+                return False, [ValidateResult(spec, str_keys, data, 'any_keys_set', error)]
+
     return True, [ValidateResult()]
 
 
@@ -463,7 +473,6 @@ class CondExistValidator(BaseValidator):
     def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         allow_unknown = extra.get('ALLOW_UNKNOWN', False)
         params = extra.get(CondExistValidator.name, {})
-        any_keys = params.get('ANY', [])
         must_with_keys = params.get('WITH', [])
         must_without_keys = params.get('WITHOUT', [])
 
@@ -480,10 +489,5 @@ class CondExistValidator(BaseValidator):
             ok = ok and all([key not in data for key in must_without_keys])
             msg = f'{", ".join(must_without_keys)} must not exist' if not ok else msg
 
-        if any_keys and isinstance(value, UnknownFieldValue):
-            ok = ok and any([key in data for key in any_keys])
-            msg = f'Or {", ".join(any_keys)} must exist' if not ok else msg
-
         info = '' if ok else KeyError(msg)
         return ok, info
-

@@ -152,10 +152,6 @@ re_field = Checker([REGEX], REGEX=dict(pattern=r'watch out', method='match'))
 a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['c']))
 b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITH=['a']))
 c = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['a']))
-
-# 2. Either a or b must exist, or both exist.
-a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(ANY=['b']))
-b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(ANY=['a']))
 ```
 
 
@@ -228,7 +224,7 @@ validate_data_spec(ok_data, GreaterThanSpec) # raise Exception
 ```
 
 
-### Strict Mode
+### Feature: Strict Mode
 
 - A spec class decorated with `dsv_feature(strict=True)` detects unexpected key/value in data
 ```python
@@ -244,6 +240,25 @@ validate_data_spec(ok_data, StrictSpec) # return True
 nok_data = dict(a=True, b=1)
 validate_data_spec(nok_data, StrictSpec) # raise Exception
 ```
+
+### Feature: Any Keys Set
+
+- A spec class decorated with `dsv_feature(any_keys_set={...})` means that at least one key of the tuple of keys from the set must exist. 
+```python
+from data_spec_validator.spec import Checker, validate_data_spec, dsv_feature, INT
+
+@dsv_feature(any_keys_set={('a', 'b')})
+class _AnyKeysSetSpec:
+    a = Checker([INT], optional=True)
+    b = Checker([INT], optional=True)
+
+validate_data_spec(dict(a=1, b=1), _AnyKeysSetSpec) # return True
+validate_data_spec(dict(a=1), _AnyKeysSetSpec) # return True
+validate_data_spec(dict(b=1), _AnyKeysSetSpec) # return True
+
+validate_data_spec(dict(c=1), _AnyKeysSetSpec) # raise Exception
+```
+
 
 
 ## Test
