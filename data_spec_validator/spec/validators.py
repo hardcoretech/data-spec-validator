@@ -11,6 +11,7 @@ from .defines import (
     AMOUNT_RANGE,
     ANY_KEY_EXISTS,
     BOOL,
+    COND_EXIST,
     DATE,
     DATE_RANGE,
     DECIMAL_PLACE,
@@ -38,7 +39,7 @@ from .defines import (
     get_unknown_field_value,
     get_validator,
 )
-from .features import is_strict
+from .features import get_any_keys_set, is_strict
 
 
 def _raise_if_condition(condition, message, error_cls=RuntimeError):
@@ -76,7 +77,11 @@ def __validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
     value = _extract_value(checks, data, field)
 
     results = []
-    if value == get_unknown_field_value() and checker.allow_optional:
+
+    if COND_EXIST in checks and checker.allow_optional:
+        extra['ALLOW_UNKNOWN'] = True
+
+    if value == get_unknown_field_value() and checker.allow_optional and COND_EXIST not in checks:
         # Pass the checker's validation directly
         pass
     elif value is None and checker.allow_none:
@@ -112,6 +117,16 @@ def _validate_spec_features(data, fields, spec) -> Tuple[bool, List[ValidateResu
         if unexpected:
             error = ValueError(f'Unexpected field keys({unexpected}) found in strict mode spec')
             return False, [ValidateResult(spec, unexpected, data, 'strict', error)]
+
+    any_keys_set = get_any_keys_set(spec)
+    if any_keys_set:
+        data_keys = set(data.keys())
+        for keys in any_keys_set:
+            if data_keys.isdisjoint(set(keys)):
+                str_keys = ", ".join(keys)
+                error = KeyError('At least one of these fields must exist')
+                return False, [ValidateResult(spec, str_keys, data, 'any_keys_set', error)]
+
     return True, [ValidateResult()]
 
 
@@ -448,4 +463,31 @@ class RegexValidator(BaseValidator):
 
         ok = type(value) == str and match_func and match_func(pattern, value)
         info = '' if ok else ValueError(f'{repr(value)} does not match "{error_regex_param}"')
+        return ok, info
+
+
+class CondExistValidator(BaseValidator):
+    name = COND_EXIST
+
+    @staticmethod
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        allow_unknown = extra.get('ALLOW_UNKNOWN', False)
+        params = extra.get(CondExistValidator.name, {})
+        must_with_keys = params.get('WITH', [])
+        must_without_keys = params.get('WITHOUT', [])
+
+        if isinstance(value, UnknownFieldValue) and not allow_unknown:
+            return False, LookupError('must exist')
+
+        ok = True
+        msg = ''
+        if must_with_keys and not isinstance(value, UnknownFieldValue):
+            ok = all([key in data for key in must_with_keys])
+            msg = f'{", ".join(must_with_keys)} must exist' if not ok else msg
+
+        if must_without_keys and not isinstance(value, UnknownFieldValue):
+            ok = ok and all([key not in data for key in must_without_keys])
+            msg = f'{", ".join(must_without_keys)} must not exist' if not ok else msg
+
+        info = '' if ok else KeyError(msg)
         return ok, info

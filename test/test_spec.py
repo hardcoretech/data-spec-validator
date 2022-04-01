@@ -8,6 +8,7 @@ from data_spec_validator.spec import (
     AMOUNT_RANGE,
     ANY_KEY_EXISTS,
     BOOL,
+    COND_EXIST,
     DATE,
     DATE_RANGE,
     DECIMAL_PLACE,
@@ -1116,6 +1117,179 @@ class TestSpec(unittest.TestCase):
             ),
         )
         assert is_something_error(ValueError, validate_data_spec, nok_data_leaf, _RootStrictSpec)
+
+    def test_any_keys_set(self):
+        @dsv_feature(any_keys_set={('a', 'b')})
+        class _AnyKeysSetSpec:
+            a = Checker([INT], optional=True)
+            b = Checker([INT], optional=True)
+
+        assert validate_data_spec(dict(a=1, b=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(b=1), _AnyKeysSetSpec)
+
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _AnyKeysSetSpec)
+
+        @dsv_feature(any_keys_set={('a', 'b'), ('c', 'd')})
+        class _AnyKeysSetSpec:
+            a = Checker([INT], optional=True)
+            b = Checker([INT], optional=True)
+            c = Checker([INT], optional=True)
+            d = Checker([INT], optional=True)
+
+        assert validate_data_spec(dict(a=1, c=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, c=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(b=1, c=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(b=1, c=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(b=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, b=1, c=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, b=1, d=1), _AnyKeysSetSpec)
+        assert validate_data_spec(dict(a=1, b=1, c=1, d=1), _AnyKeysSetSpec)
+
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1), _AnyKeysSetSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1), _AnyKeysSetSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _AnyKeysSetSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(d=1), _AnyKeysSetSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(e=1), _AnyKeysSetSpec)
+
+    def test_conditional_existence(self):
+        """
+        The existence cases of a, b, c. 2 * 2 * 2 = 8 cases.
+        dict(a=1, b=1, c=1)
+        dict(a=1, b=1)
+        dict(a=1, c=1)
+        dict(b=1, c=1)
+        dict(a=1)
+        dict(b=1)
+        dict(c=1)
+        dict(d=1)
+        """
+        # ==========================
+
+        class _CondExistAOBOCOSpec:
+            a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['c']))
+            b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITH=['a'], WITHOUT=['c']))
+            c = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['a']))
+
+        assert validate_data_spec(dict(a=1, b=1), _CondExistAOBOCOSpec)
+        assert validate_data_spec(dict(a=1), _CondExistAOBOCOSpec)
+        assert validate_data_spec(dict(c=1), _CondExistAOBOCOSpec)
+        assert validate_data_spec(dict(d=1), _CondExistAOBOCOSpec)
+
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, b=1, c=1), _CondExistAOBOCOSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, c=1), _CondExistAOBOCOSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(b=1, c=1), _CondExistAOBOCOSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(b=1), _CondExistAOBOCOSpec)
+        # ==========================
+
+        class _CondExistABOCOSpec:
+            a = Checker([COND_EXIST], COND_EXIST=dict(WITHOUT=['c']))
+            b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITH=['a'], WITHOUT=['c']))
+            c = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['a']))
+
+        assert validate_data_spec(dict(a=1, b=1), _CondExistABOCOSpec)
+        assert validate_data_spec(dict(a=1), _CondExistABOCOSpec)
+
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, b=1, c=1), _CondExistABOCOSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, c=1), _CondExistABOCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1, c=1), _CondExistABOCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1), _CondExistABOCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _CondExistABOCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(d=1), _CondExistABOCOSpec)
+        # ==========================
+
+        class _CondExistAOBCOSpec:
+            a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['c']))
+            b = Checker([COND_EXIST], COND_EXIST=dict(WITH=['a'], WITHOUT=['c']))
+            c = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['a']))
+
+        assert validate_data_spec(dict(a=1, b=1), _CondExistAOBCOSpec)
+
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, b=1, c=1), _CondExistAOBCOSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, c=1), _CondExistAOBCOSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(b=1, c=1), _CondExistAOBCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1), _CondExistAOBCOSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(b=1), _CondExistAOBCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _CondExistAOBCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(d=1), _CondExistAOBCOSpec)
+        # ==========================
+
+        class _CondExistAOBOCSpec:
+            a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['c']))
+            b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITH=['a'], WITHOUT=['c']))
+            c = Checker([COND_EXIST], COND_EXIST=dict(WITHOUT=['a']))
+
+        assert validate_data_spec(dict(c=1), _CondExistAOBOCSpec)
+
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, b=1, c=1), _CondExistAOBOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1, b=1), _CondExistAOBOCSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, c=1), _CondExistAOBOCSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(b=1, c=1), _CondExistAOBOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1), _CondExistAOBOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1), _CondExistAOBOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(d=1), _CondExistAOBOCSpec)
+        # ==========================
+
+        class _CondExistABCOSpec:
+            a = Checker([COND_EXIST], COND_EXIST=dict(WITHOUT=['c']))
+            b = Checker([COND_EXIST], COND_EXIST=dict(WITH=['a'], WITHOUT=['c']))
+            c = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['a']))
+
+        assert validate_data_spec(dict(a=1, b=1), _CondExistABCOSpec)
+
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, b=1, c=1), _CondExistABCOSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, c=1), _CondExistABCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1, c=1), _CondExistABCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1), _CondExistABCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1), _CondExistABCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _CondExistABCOSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(d=1), _CondExistABCOSpec)
+        # ==========================
+
+        class _CondExistABOCSpec:
+            a = Checker([COND_EXIST], COND_EXIST=dict(WITHOUT=['c']))
+            b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITH=['a'], WITHOUT=['c']))
+            c = Checker([COND_EXIST], COND_EXIST=dict(WITHOUT=['a']))
+
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, b=1, c=1), _CondExistABOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1, b=1), _CondExistABOCSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, c=1), _CondExistABOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1, c=1), _CondExistABOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1), _CondExistABOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1), _CondExistABOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _CondExistABOCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(d=1), _CondExistABOCSpec)
+        # ==========================
+
+        class _CondExistAOBCSpec:
+            a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['c']))
+            b = Checker([COND_EXIST], COND_EXIST=dict(WITH=['a'], WITHOUT=['c']))
+            c = Checker([COND_EXIST], COND_EXIST=dict(WITHOUT=['a']))
+
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, b=1, c=1), _CondExistAOBCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1, b=1), _CondExistAOBCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1, c=1), _CondExistAOBCSpec)
+        assert is_something_error(KeyError, validate_data_spec, dict(b=1, c=1), _CondExistAOBCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1), _CondExistAOBCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1), _CondExistAOBCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _CondExistAOBCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(d=1), _CondExistAOBCSpec)
+        # ==========================
+
+        class _CondExistABCSpec:
+            a = Checker([COND_EXIST], COND_EXIST=dict(WITHOUT=['c']))
+            b = Checker([COND_EXIST], COND_EXIST=dict(WITH=['a'], WITHOUT=['c']))
+            c = Checker([COND_EXIST], COND_EXIST=dict(WITHOUT=['a']))
+
+        assert is_something_error(KeyError, validate_data_spec, dict(a=1, b=1, c=1), _CondExistABCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1, b=1), _CondExistABCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1, c=1), _CondExistABCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1, c=1), _CondExistABCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(a=1), _CondExistABCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(b=1), _CondExistABCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _CondExistABCSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(d=1), _CondExistABCSpec)
 
 
 class TestCustomSpec(unittest.TestCase):

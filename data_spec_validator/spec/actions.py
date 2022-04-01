@@ -43,6 +43,8 @@ def _find_most_significant_error(failures) -> Exception:
             err_key = 'TypeError'
         elif isinstance(err, LookupError):
             err_key = 'LookupError'
+        elif isinstance(err, KeyError):
+            err_key = 'KeyError'
         else:
             err_key = 'RuntimeError'
         err_map.setdefault(err_key, []).append(err)
@@ -50,6 +52,7 @@ def _find_most_significant_error(failures) -> Exception:
     # Severity, PermissionError > LookupError > TypeError > ValueError > RuntimeError.
     errors = (
         err_map.get('PermissionError', [])
+        or err_map.get('KeyError', [])
         or err_map.get('LookupError', [])
         or err_map.get('TypeError', [])
         or err_map.get('ValueError', [])

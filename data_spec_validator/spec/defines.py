@@ -32,6 +32,8 @@ EMAIL = 'email'
 UUID = 'uuid'
 REGEX = 'regex'
 
+COND_EXIST = 'cond_exist'
+
 # Wrapper prefix
 _wrapper_splitter = '-'
 _not_prefix = 'not'
@@ -63,6 +65,7 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         AmountValidator,
         AnyKeyExistsValidator,
         BoolValidator,
+        CondExistValidator,
         DateRangeValidator,
         DateValidator,
         DecimalPlaceValidator,
@@ -110,6 +113,7 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         EMAIL: EmailValidator(),
         UUID: UUIDValidator(),
         REGEX: RegexValidator(),
+        COND_EXIST: CondExistValidator(),
     }
 
 
@@ -195,6 +199,10 @@ class Checker:
         self._ensure(kwargs)
         if extra:
             print('[DSV][WARNING] keyword: extra is gonna be deprecated')
+        deprecating_checks = {KEY_COEXISTS, ANY_KEY_EXISTS}
+        for deprecating_check in deprecating_checks.intersection(set(checks)):
+            print(f'[DSV][WARNING] Check: {deprecating_check.upper()} is gonna be deprecated')
+
         self.extra = self._merge_extra_kwargs(extra or {}, kwargs)
 
     @staticmethod

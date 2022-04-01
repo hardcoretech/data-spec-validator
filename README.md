@@ -76,76 +76,82 @@ validate_data_spec(another_data, AnotherSpec) # raise Exception
 
 * Supported checks & sample usages (see `test_spec.py` for more cases)
 ```
-# INT
+### INT
 int_field = Checker([INT])
 
-# STR
+### STR
 str_field = Checker([STR])
 
-# DIGIT_STR
+### DIGIT_STR
 digi_str_field = Checker([DIGIT_STR])
 
-# BOOL
+### BOOL
 bool_field = Checker([BOOL])
 
-# DICT
+### DICT
 dict_field = Checker([DICT])
 
-# LIST
+### LIST
 list_field = Checker([LIST])
 
-# NONE
+### NONE
 none_field = Checker([NONE])
 
-# JSON
+### JSON
 none_field = Checker([JSON])
 
-# JSON_BOOL
+### JSON_BOOL
 none_field = Checker([JSON_BOOL])
 
-# ONE_OF
+### ONE_OF
 one_of_field = Checker([ONE_OF], ONE_OF=['a', 'b', 'c'])
 
-# SPEC
+### SPEC
 spec_field = Checker([SPEC], SPEC=SomeSpecClass)
 
-# LIST_OF
+### LIST_OF
 list_of_int_field = Checker([LIST_OF], LIST_OF=INT)
 list_of_spec_field = Checker([LIST_OF], LIST_OF=SomeSpecClass)
 
-# LENGTH
+### LENGTH
 length_field = Checker([LENGTH], LENGTH=dict(min=3, max=5))
 
-# AMOUNT
+### AMOUNT
 amount_field = Checker([AMOUNT])
 
-# AMOUNT_RANGE
+### AMOUNT_RANGE
 amount_range_field = Checker([AMOUNT_RANGE], AMOUNT_RANGE=dict(min=-2.1, max=3.8))
 
-# DECIMAL_PLACE
+### DECIMAL_PLACE
 decimal_place_field = Checker([DECIMAL_PLACE], DECIMAL_PLACE=4)
 
-# DATE
+### DATE
 date_field = Checker([DATE])
 
-# DATE_RANGE
+### DATE_RANGE
 date_range_field = Checker([DATE_RANGE], DATE_RANGE=dict(min='2000-01-01', max='2010-12-31'))
 
-# ANY_KEY_EXISTS
+### ANY_KEY_EXISTS
 any_key_checker = Checker([ANY_KEY_EXISTS], ANY_KEY_EXISTS={'key1', 'key2', 'key3'})
 
-# KEY_COEXISTS
+### KEY_COEXISTS
 key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])
 
-# EMAIL
+### EMAIL
 email_field = Checker([EMAIL])
 
-# UUID
+### UUID
 uuid_field = Checker([UUID])
 
-# REGEX
+### REGEX
 re_field = Checker([REGEX], REGEX=dict(pattern=r'^The'))
 re_field = Checker([REGEX], REGEX=dict(pattern=r'watch out', method='match'))
+
+### COND_EXIST
+# 1. If a exists, c must not exist, if b exists, a must exist, if c exists, a must not exist.
+a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['c']))
+b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITH=['a']))
+c = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['a']))
 ```
 
 
@@ -218,7 +224,7 @@ validate_data_spec(ok_data, GreaterThanSpec) # raise Exception
 ```
 
 
-### Strict Mode
+### Feature: Strict Mode
 
 - A spec class decorated with `dsv_feature(strict=True)` detects unexpected key/value in data
 ```python
@@ -234,6 +240,37 @@ validate_data_spec(ok_data, StrictSpec) # return True
 nok_data = dict(a=True, b=1)
 validate_data_spec(nok_data, StrictSpec) # raise Exception
 ```
+
+### Feature: Any Keys Set
+
+- A spec class decorated with e.g. `dsv_feature(any_keys_set={...})` means that at least one key among a keys tuple from the set must exist.
+```python
+from data_spec_validator.spec import Checker, validate_data_spec, dsv_feature, INT
+
+@dsv_feature(any_keys_set={('a', 'b'), ('c', 'd')})
+class _AnyKeysSetSpec:
+    a = Checker([INT], optional=True)
+    b = Checker([INT], optional=True)
+    c = Checker([INT], optional=True)
+    d = Checker([INT], optional=True)
+
+validate_data_spec(dict(a=1, c=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, c=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(b=1, c=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(b=1, c=1), _AnyKeysSetSpec)
+validate_data_spec(dict(b=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, b=1, c=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, b=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, b=1, c=1, d=1), _AnyKeysSetSpec)
+
+validate_data_spec(dict(a=1), _AnyKeysSetSpec) # raise exception
+validate_data_spec(dict(b=1), _AnyKeysSetSpec) # raise exception
+validate_data_spec(dict(c=1), _AnyKeysSetSpec) # raise exception
+validate_data_spec(dict(d=1), _AnyKeysSetSpec) # raise exception
+validate_data_spec(dict(e=1), _AnyKeysSetSpec) # raise exception
+```
+
 
 
 ## Test
