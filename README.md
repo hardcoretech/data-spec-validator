@@ -247,16 +247,28 @@ validate_data_spec(nok_data, StrictSpec) # raise Exception
 ```python
 from data_spec_validator.spec import Checker, validate_data_spec, dsv_feature, INT
 
-@dsv_feature(any_keys_set={('a', 'b')})
+@dsv_feature(any_keys_set={('a', 'b'), ('c', 'd')})
 class _AnyKeysSetSpec:
     a = Checker([INT], optional=True)
     b = Checker([INT], optional=True)
+    c = Checker([INT], optional=True)
+    d = Checker([INT], optional=True)
 
-validate_data_spec(dict(a=1, b=1), _AnyKeysSetSpec) # return True
-validate_data_spec(dict(a=1), _AnyKeysSetSpec) # return True
-validate_data_spec(dict(b=1), _AnyKeysSetSpec) # return True
+validate_data_spec(dict(a=1, c=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, c=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(b=1, c=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(b=1, c=1), _AnyKeysSetSpec)
+validate_data_spec(dict(b=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, b=1, c=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, b=1, d=1), _AnyKeysSetSpec)
+validate_data_spec(dict(a=1, b=1, c=1, d=1), _AnyKeysSetSpec)
 
-validate_data_spec(dict(c=1), _AnyKeysSetSpec) # raise Exception
+validate_data_spec(dict(a=1), _AnyKeysSetSpec) # raise exception
+validate_data_spec(dict(b=1), _AnyKeysSetSpec) # raise exception
+validate_data_spec(dict(c=1), _AnyKeysSetSpec) # raise exception
+validate_data_spec(dict(d=1), _AnyKeysSetSpec) # raise exception
+validate_data_spec(dict(e=1), _AnyKeysSetSpec) # raise exception
 ```
 
 
