@@ -3,7 +3,7 @@ import json
 import re
 import uuid
 from decimal import Decimal
-from typing import Any, Dict, List, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Tuple, Type, Union
 
 import dateutil.parser
 
@@ -20,6 +20,7 @@ from .defines import (
     DIGIT_STR,
     DUMMY,
     EMAIL,
+    FOREACH,
     INT,
     JSON,
     JSON_BOOL,
@@ -41,19 +42,14 @@ from .defines import (
     get_validator,
 )
 from .features import get_any_keys_set, is_strict
+from .utils import raise_if
 
 _ALLOW_UNKNOWN = 'ALLOW_UNKNOWN'
 _SPEC_WISE_CHECKS = [COND_EXIST, KEY_COEXISTS, ANY_KEY_EXISTS]
 
 
-def _raise_if_condition(condition, message, error_cls=RuntimeError):
-    if condition:
-        raise error_cls(message)
-
-
 def _extract_fields(spec) -> List[str]:
-    if type(spec) != type:
-        raise RuntimeError(f'{spec} should be just a class')
+    raise_if(type(spec) != type, RuntimeError(f'{spec} should be just a class'))
 
     return list(filter(lambda f: type(f) == str and not (f.startswith('__') and f.endswith('__')), spec.__dict__))
 
@@ -87,7 +83,7 @@ def _pass_none(allow_none: bool, value: Any) -> bool:
     return value is None and allow_none
 
 
-def _pass_unknown(_extra: bool, value: Any) -> bool:
+def _pass_unknown(_extra: Dict, value: Any) -> bool:
     return value == get_unknown_field_value() and _ALLOW_UNKNOWN in _extra
 
 
@@ -149,7 +145,7 @@ def _validate_spec_features(data, fields, spec) -> Tuple[bool, List[ValidateResu
         unexpected = set(data.keys()) - set(fields)
         if unexpected:
             error = ValueError(f'Unexpected field keys({unexpected}) found in strict mode spec')
-            return False, [ValidateResult(spec, unexpected, data, 'strict', error)]
+            return False, [ValidateResult(spec, str(unexpected), data, 'strict', error)]
 
     any_keys_set = get_any_keys_set(spec)
     if any_keys_set:
@@ -173,7 +169,7 @@ class DummyValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data):
-        raise NotImplementedError
+        raise_if(True, NotImplementedError())
 
 
 class IntValidator(BaseValidator):
@@ -279,9 +275,9 @@ class AmountRangeValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         amount_range_info = extra.get(AmountRangeValidator.name)
-        _raise_if_condition(
+        raise_if(
             type(amount_range_info) != dict or ('min' not in amount_range_info and 'max' not in amount_range_info),
-            f'Invalid extra configuration: {extra}',
+            RuntimeError(f'Invalid extra configuration: {extra}'),
         )
 
         lower_bound = amount_range_info.get('min', float('-inf'))
@@ -298,15 +294,15 @@ class LengthValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         length_info = extra.get(LengthValidator.name)
-        _raise_if_condition(
+        raise_if(
             type(length_info) != dict or ('min' not in length_info and 'max' not in length_info),
-            f'Invalid extra configuration: {extra}',
+            RuntimeError(f'Invalid extra configuration: {extra}'),
         )
 
         lower_bound, upper_bound = length_info.get('min', 0), length_info.get('max')
-        _raise_if_condition(
+        raise_if(
             lower_bound < 0,
-            'Lower boundary cannot less than 0 for length validator',
+            RuntimeError('Lower boundary cannot less than 0 for length validator'),
         )
 
         ok = lower_bound <= len(value) <= upper_bound if upper_bound else lower_bound <= len(value)
@@ -339,6 +335,9 @@ class ListOfValidator(BaseValidator):
 
     @staticmethod
     def validate(values, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        if type(values) != list:
+            return False, TypeError('Must a be in type: list')
+
         check = extra.get(ListOfValidator.name)
         validator = get_validator(check)
         for value in values:
@@ -358,6 +357,21 @@ class OneOfValidator(BaseValidator):
         ok = value in options
         info = '' if ok else ValueError(f'{repr(value)} is not one of {options}')
         return ok, info
+
+
+class ForeachValidator(BaseValidator):
+    name = FOREACH
+
+    @staticmethod
+    def validate(values: Iterable, extra: Dict, data: Dict) -> Tuple[bool, Union[Exception, str]]:
+        check = extra.get(ForeachValidator.name)
+        validator = get_validator(check)
+        for value in values:
+            ok, error = validator.validate(value, extra, data)
+            if not ok:
+                # Early return to save lives.
+                return False, error
+        return True, ''
 
 
 class DecimalPlaceValidator(BaseValidator):
@@ -392,16 +406,16 @@ class DateRangeValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         range_info = extra.get(DateRangeValidator.name)
-        _raise_if_condition(
+        raise_if(
             type(range_info) != dict or ('min' not in range_info and 'max' not in range_info),
-            f'Invalid extra configuration: {extra}',
+            RuntimeError(f'Invalid extra configuration: {extra}'),
         )
 
         min_date_str = range_info.get('min', '1970-01-01')
         max_date_str = range_info.get('max', '2999-12-31')
-        _raise_if_condition(
+        raise_if(
             type(min_date_str) != str or type(max_date_str) != str,
-            f'Invalid extra configuration(must be str): {extra}',
+            RuntimeError(f'Invalid extra configuration(must be str): {extra}'),
         )
 
         min_date = dateutil.parser.parse(min_date_str).date()
@@ -492,7 +506,7 @@ class RegexValidator(BaseValidator):
         elif match_method == 'search':
             match_func = re.search
         else:
-            _raise_if_condition(True, f'unsupported match method: {match_method}')
+            raise_if(True, RuntimeError(f'unsupported match method: {match_method}'))
 
         ok = type(value) == str and match_func and match_func(pattern, value)
         info = '' if ok else ValueError(f'{repr(value)} does not match "{error_regex_param}"')

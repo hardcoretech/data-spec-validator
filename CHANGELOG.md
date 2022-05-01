@@ -1,6 +1,20 @@
 Changelog
 =========
 
+1.8.0
+-----
+
+Changes:
+
+- [fix] COND_EXIST now works with other checks correctly.
+- [feature] Add new check `FOREACH`, used for any iterable.
+- [behavior-change] `LIST_OF` enforce LIST type validation as well
+- [behavior-change] Use `warning.warn` instead of `print`
+- [internal] More type hint
+- Postpone {KEY_COEXISTS, ANY_KEY_EXISTS} deprecation, will remove them in 1.9.0
+- Update README
+
+
 1.7.0
 -----
 

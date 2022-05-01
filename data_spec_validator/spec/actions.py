@@ -1,4 +1,5 @@
 from .defines import MsgLv, UnknownFieldValue, ValidateResult, get_msg_level
+from .utils import raise_if
 from .validators import SpecValidator
 
 
@@ -12,8 +13,7 @@ def _wrap_error_with_field_info(failure) -> Exception:
 
 
 def _flatten_results(failures, errors=None):
-    if type(errors) != list:
-        raise RuntimeError(f'{errors} not a list')
+    raise_if(type(errors) != list, RuntimeError(f'{errors} not a list'))
 
     if type(failures) == tuple:
         _flatten_results(failures[1], errors)
@@ -70,5 +70,5 @@ def validate_data_spec(data, spec, **kwargs) -> bool:
 
     if not ok and not nothrow:
         error = _find_most_significant_error(failures)
-        raise error
+        raise_if(True, error)
     return ok
