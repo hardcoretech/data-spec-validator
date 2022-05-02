@@ -1,8 +1,9 @@
+import copy
 import json
 import re
 import uuid
 from decimal import Decimal
-from typing import List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Type, Union
 
 import dateutil.parser
 
@@ -41,6 +42,9 @@ from .defines import (
 )
 from .features import get_any_keys_set, is_strict
 
+_ALLOW_UNKNOWN = 'ALLOW_UNKNOWN'
+_SPEC_WISE_CHECKS = [COND_EXIST, KEY_COEXISTS, ANY_KEY_EXISTS]
+
 
 def _raise_if_condition(condition, message, error_cls=RuntimeError):
     if condition:
@@ -65,43 +69,72 @@ def _extract_value(checks: list, data: dict, field: str):
     return value
 
 
-def __validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
-    checker = getattr(spec, field)
-
-    checks = checker.checks
-    extra = checker.extra
-
+def _makeup_internals_to_extra(spec: Type, checks: List[str], raw_extra: Dict, allow_optional: bool) -> Dict:
+    extra = copy.deepcopy(raw_extra)
     if extra.get(SpecValidator.name) == SELF:
         extra[SpecValidator.name] = spec
 
+    if COND_EXIST in checks and allow_optional:
+        extra[_ALLOW_UNKNOWN] = True
+    return extra
+
+
+def _pass_optional(allow_optional: bool, checks: List[str], value: Any) -> bool:
+    return value == get_unknown_field_value() and allow_optional and COND_EXIST not in checks
+
+
+def _pass_none(allow_none: bool, value: Any) -> bool:
+    return value is None and allow_none
+
+
+def _pass_unknown(_extra: bool, value: Any) -> bool:
+    return value == get_unknown_field_value() and _ALLOW_UNKNOWN in _extra
+
+
+def _validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
+    checker = getattr(spec, field)
+
+    checks = checker.checks
+    allow_optional = checker.allow_optional
+    allow_none = checker.allow_none
+
     value = _extract_value(checks, data, field)
+    extra = _makeup_internals_to_extra(spec, checks, checker.extra, allow_optional)
 
     results = []
 
-    if COND_EXIST in checks and checker.allow_optional:
-        extra['ALLOW_UNKNOWN'] = True
-
-    if value == get_unknown_field_value() and checker.allow_optional and COND_EXIST not in checks:
-        # Pass the checker's validation directly
-        pass
-    elif value is None and checker.allow_none:
-        # Pass the checker's validation directly
-        pass
+    if _pass_optional(allow_optional, checks, value):
+        # Skip all the other checks' validations
+        return True, []
+    elif _pass_none(allow_none, value):
+        # Skip all the other checks' validations
+        return True, []
     else:
-        for check in checks:
-            validator = get_validator(check)
+
+        def _do_validate(_acc_results: List, _spec: Any, _check: str, _value: Any, _data: Dict, _extra: Dict) -> None:
+            validator = get_validator(_check)
             try:
-                ok, error = validator.validate(value, extra, data)
+                ok, error = validator.validate(_value, _extra, _data)
             except AttributeError as ae:
-                if check == LIST_OF:
+                if _check == LIST_OF:
                     # During list_of check, the target should be one kind of spec.
-                    ok, error = False, TypeError(f'{repr(value)} is not a spec of {spec}, detail: {repr(ae)}')
+                    ok, error = False, TypeError(f'{repr(_value)} is not a spec of {_spec}, detail: {repr(ae)}')
                 else:
                     ok, error = False, RuntimeError(f'{repr(ae)}')
             except Exception as e:
                 # For any unwell-handled case, go this way for now.
                 ok, error = False, RuntimeError(f'{repr(e)}')
-            results.append((ok, ValidateResult(spec, field, value, check, error)))
+            _acc_results.append((ok, ValidateResult(spec, field, _value, _check, error)))
+
+        spec_wise_checks = set(filter(lambda c: c in _SPEC_WISE_CHECKS, checks))
+        field_wise_checks = set(checks) - spec_wise_checks
+
+        for chk in spec_wise_checks:
+            _do_validate(results, spec, chk, value, data, extra)
+
+        if not _pass_unknown(extra, value):
+            for chk in field_wise_checks:
+                _do_validate(results, spec, chk, value, data, extra)
 
     nok_results = [rs for (ok, rs) in results if not ok]
     if checker.is_op_any and len(nok_results) == len(checks):
@@ -131,7 +164,7 @@ def _validate_spec_features(data, fields, spec) -> Tuple[bool, List[ValidateResu
 
 
 def _validate_spec_fields(data, fields, spec) -> List[Tuple[bool, List[ValidateResult]]]:
-    rs = [__validate_field(data, f, spec) for f in fields]
+    rs = [_validate_field(data, f, spec) for f in fields]
     return rs
 
 
@@ -471,7 +504,7 @@ class CondExistValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
-        allow_unknown = extra.get('ALLOW_UNKNOWN', False)
+        allow_unknown = extra.get(_ALLOW_UNKNOWN, False)
         params = extra.get(CondExistValidator.name, {})
         must_with_keys = params.get('WITH', [])
         must_without_keys = params.get('WITHOUT', [])
