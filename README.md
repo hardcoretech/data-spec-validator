@@ -73,89 +73,97 @@ validate_data_spec(another_data, AnotherSpec) # return True
 another_data = dict(field='4')
 validate_data_spec(another_data, AnotherSpec) # raise Exception
 ```
+---
+## Supported checks & sample usages (see `test_spec.py` for more cases)
 
-* Supported checks & sample usages (see `test_spec.py` for more cases)
-```
 ### INT
-int_field = Checker([INT])
+`int_field = Checker([INT])`
 
 ### STR
-str_field = Checker([STR])
+`str_field = Checker([STR])`
 
 ### DIGIT_STR
-digi_str_field = Checker([DIGIT_STR])
+`digi_str_field = Checker([DIGIT_STR])`
 
 ### BOOL
-bool_field = Checker([BOOL])
+`bool_field = Checker([BOOL])`
 
 ### DICT
-dict_field = Checker([DICT])
+`dict_field = Checker([DICT])`
 
 ### LIST
-list_field = Checker([LIST])
+`list_field = Checker([LIST])`
 
 ### NONE
-none_field = Checker([NONE])
+`none_field = Checker([NONE])`
 
 ### JSON
-none_field = Checker([JSON])
+`json_field = Checker([JSON])`
 
 ### JSON_BOOL
-none_field = Checker([JSON_BOOL])
+`json_bool_field = Checker([JSON_BOOL])`
 
 ### ONE_OF
-one_of_field = Checker([ONE_OF], ONE_OF=['a', 'b', 'c'])
+`one_of_field = Checker([ONE_OF], ONE_OF=['a', 'b', 'c'])`
 
 ### SPEC
-spec_field = Checker([SPEC], SPEC=SomeSpecClass)
+`spec_field = Checker([SPEC], SPEC=SomeSpecClass)`
 
-### LIST_OF
-list_of_int_field = Checker([LIST_OF], LIST_OF=INT)
-list_of_spec_field = Checker([LIST_OF], LIST_OF=SomeSpecClass)
+### LIST_OF: Enforce LIST type validation as well
+`list_of_int_field = Checker([LIST_OF], LIST_OF=INT)`
+
+`list_of_spec_field = Checker([LIST_OF], LIST_OF=SomeSpecClass)`
 
 ### LENGTH
-length_field = Checker([LENGTH], LENGTH=dict(min=3, max=5))
+`length_field = Checker([LENGTH], LENGTH=dict(min=3, max=5))`
 
 ### AMOUNT
-amount_field = Checker([AMOUNT])
+`amount_field = Checker([AMOUNT])`
 
 ### AMOUNT_RANGE
-amount_range_field = Checker([AMOUNT_RANGE], AMOUNT_RANGE=dict(min=-2.1, max=3.8))
+`amount_range_field = Checker([AMOUNT_RANGE], AMOUNT_RANGE=dict(min=-2.1, max=3.8))`
 
 ### DECIMAL_PLACE
-decimal_place_field = Checker([DECIMAL_PLACE], DECIMAL_PLACE=4)
+`decimal_place_field = Checker([DECIMAL_PLACE], DECIMAL_PLACE=4)`
 
 ### DATE
-date_field = Checker([DATE])
+`date_field = Checker([DATE])`
 
 ### DATE_RANGE
-date_range_field = Checker([DATE_RANGE], DATE_RANGE=dict(min='2000-01-01', max='2010-12-31'))
+`date_range_field = Checker([DATE_RANGE], DATE_RANGE=dict(min='2000-01-01', max='2010-12-31'))`
 
-### ANY_KEY_EXISTS
-any_key_checker = Checker([ANY_KEY_EXISTS], ANY_KEY_EXISTS={'key1', 'key2', 'key3'})
+### ANY_KEY_EXISTS (postpone deprecation, target to remove in 1.9.0)
+#### _Use @dsv_feature(any_keys_set={...}) instead, see below_
 
-### KEY_COEXISTS
-key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])
+~~`any_key_checker = Checker([ANY_KEY_EXISTS], ANY_KEY_EXISTS={'key1', 'key2', 'key3'})`~~
+
+### KEY_COEXISTS (postpone deprecation, target to remove in 1.9.0)
+#### _Use COND_EXIST instead, see below_
+~~`key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])`~~
 
 ### EMAIL
-email_field = Checker([EMAIL])
+`email_field = Checker([EMAIL])`
 
 ### UUID
-uuid_field = Checker([UUID])
+`uuid_field = Checker([UUID])`
 
 ### REGEX
-re_field = Checker([REGEX], REGEX=dict(pattern=r'^The'))
-re_field = Checker([REGEX], REGEX=dict(pattern=r'watch out', method='match'))
+`re_field = Checker([REGEX], REGEX=dict(pattern=r'^The'))`
+
+`re_field = Checker([REGEX], REGEX=dict(pattern=r'watch out', method='match'))`
 
 ### COND_EXIST
-# 1. If a exists, c must not exist, if b exists, a must exist, if c exists, a must not exist.
-a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['c']))
-b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITH=['a']))
-c = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['a']))
-```
+If a exists, c must not exist, if b exists, a must exist, if c exists, a must not exist.
 
+Practically, `optional=True` will be configured in the most use cases, FMI, see `test/test_spec.py`
 
+`a = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['c']))`
 
+`b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITH=['a']))`
+
+`c = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['a']))`
+
+---
 
 * Decorate a method with `dsv`, the method must meet one of the following requirements.
     1) It's a view's member function, and the view has a WSGIRequest(`django.core.handlers.wsgi.WSGIRequest`) attribute.
@@ -184,6 +192,7 @@ def customer_create(request):
 ```
 
 * Decorate another method with `dsv_request_meta` can help you validate the META in request header.
+---
 
 ### Register Custom Spec Check & Validator
 - Define custom CHECK constant (`gt_check` in this case) and write custom Validator(`GreaterThanValidator` in this case)
@@ -212,6 +221,7 @@ validate_data_spec(ok_data, GreaterThanSpec) # return True
 nok_data = dict(key=9)
 validate_data_spec(ok_data, GreaterThanSpec) # raise Exception
 ```
+---
 ### Message Level
 
 - 2 modes (**Default** v.s. **Vague**), can be switched by calling `reset_msg_level(vague=True)`
@@ -222,8 +232,7 @@ validate_data_spec(ok_data, GreaterThanSpec) # raise Exception
 # In vague mode, any exception happens, a general message is shown
 "field: XXX not well-formatted"
 ```
-
-
+---
 ### Feature: Strict Mode
 
 - A spec class decorated with `dsv_feature(strict=True)` detects unexpected key/value in data
@@ -240,7 +249,7 @@ validate_data_spec(ok_data, StrictSpec) # return True
 nok_data = dict(a=True, b=1)
 validate_data_spec(nok_data, StrictSpec) # raise Exception
 ```
-
+---
 ### Feature: Any Keys Set
 
 - A spec class decorated with e.g. `dsv_feature(any_keys_set={...})` means that at least one key among a keys tuple from the set must exist.
@@ -270,9 +279,7 @@ validate_data_spec(dict(c=1), _AnyKeysSetSpec) # raise exception
 validate_data_spec(dict(d=1), _AnyKeysSetSpec) # raise exception
 validate_data_spec(dict(e=1), _AnyKeysSetSpec) # raise exception
 ```
-
-
-
+---
 ## Test
 ```bash
 python -m unittest test.test_spec

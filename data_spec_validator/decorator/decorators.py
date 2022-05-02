@@ -8,7 +8,7 @@ try:
     from rest_framework.request import Request
 except ModuleNotFoundError as e:
     print(f'[DSV][WARNING] decorator: "dsv" cannot be used, {e}')
-from data_spec_validator.spec import validate_data_spec
+from data_spec_validator.spec import raise_if, validate_data_spec
 
 
 def _is_request(obj):
@@ -21,8 +21,8 @@ def _is_view(obj):
 
 def _combine_named_params(data, **kwargs):
     def combine_params(_data, params):
-        if set(_data.keys()) & set(params.keys()):
-            raise RuntimeError('Data and URL named param have conflict')
+
+        raise_if(bool(set(_data.keys()) & set(params.keys())), RuntimeError('Data and URL named param have conflict'))
 
         if isinstance(_data, QueryDict):
             qd = QueryDict(mutable=True)
@@ -41,23 +41,26 @@ def _combine_named_params(data, **kwargs):
 
 
 def _extract_request_meta(req, **kwargs):
-    if isinstance(req, WSGIRequest) or isinstance(req, Request):
-        data = req.META
-    else:
-        raise Exception(f'Unsupported req type, {type(req)}')
-
-    return _combine_named_params(data, **kwargs)
+    raise_if(
+        not isinstance(req, WSGIRequest) and not isinstance(req, Request),
+        RuntimeError(f'Unsupported req type, {type(req)}'),
+    )
+    return _combine_named_params(req.META, **kwargs)
 
 
 def _extract_request_param_data(req, **kwargs):
-    if isinstance(req, WSGIRequest):
-        if req.method not in ['GET', 'POST']:
-            raise Exception(f'Disallowed method {req.method}')
+    is_wsgi_request = isinstance(req, WSGIRequest)
+    is_request = isinstance(req, Request)
+    raise_if(
+        not is_wsgi_request and not is_request,
+        RuntimeError(f'Unsupported req type, {type(req)}'),
+    )
+
+    if is_wsgi_request:
+        raise_if(req.method not in ['GET', 'POST'], RuntimeError(f'Disallowed method {req.method}'))
         data = req.GET if req.method == 'GET' else req.POST
-    elif isinstance(req, Request):
-        data = req.query_params if req.method == 'GET' else req.data
     else:
-        raise Exception(f'Unsupported req type, {type(req)}')
+        data = req.query_params if req.method == 'GET' else req.data
 
     return _combine_named_params(data, **kwargs)
 
@@ -71,9 +74,8 @@ def _extract_request(*args):
     else:
         # Fallback to find the first request object
         req = next(filter(lambda o: _is_request(o), args), None)
-        if req:
-            return req
-        raise Exception('Unexpected usage')
+        raise_if(not req, RuntimeError('Unexpected usage'))
+        return req
 
 
 def _do_validate(data, spec):

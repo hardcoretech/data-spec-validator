@@ -14,7 +14,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setuptools.setup(
     name="data-spec-validator",
     version=about['__version__'],
-    author="CJHwong, falldog, HardCoreLewis, kilikkuo, xeonchen",
+    author="GoFreight",
     author_email="pypi@hardcoretech.co",
     description="Simple validation tool for API",
     long_description=long_description,
@@ -34,4 +34,5 @@ setuptools.setup(
         'decorator': ['Django', 'djangorestframework'],
     },
     python_requires=">=3.6",
+    project_urls={"Changelog": "https://github.com/hardcoretech/data-spec-validator/blob/develop/CHANGELOG.md"},
 )

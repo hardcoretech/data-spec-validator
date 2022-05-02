@@ -14,6 +14,7 @@ from data_spec_validator.spec import (
     DECIMAL_PLACE,
     DICT,
     EMAIL,
+    FOREACH,
     INT,
     JSON,
     JSON_BOOL,
@@ -164,17 +165,14 @@ class TestSpec(unittest.TestCase):
         assert is_something_error(Exception, validate_data_spec, nok_data, _get_no_extra_self_spec())
 
     def test_list(self):
-        def _get_list_spec():
-            class ListSpec:
-                list_field = Checker([LIST])
-
-            return ListSpec
+        class ListSpec:
+            list_field = Checker([LIST])
 
         ok_data = dict(list_field=[1, 2, 3])
-        assert validate_data_spec(ok_data, _get_list_spec())
+        assert validate_data_spec(ok_data, ListSpec)
 
         nok_data = dict(list_field=dict(a=2, b=4))
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_list_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, ListSpec)
 
     def test_dict(self):
         def _get_dict_spec():
@@ -479,25 +477,51 @@ class TestSpec(unittest.TestCase):
         assert is_something_error(TypeError, validate_data_spec, nok_data, _get_list_of_spec_spec())
         assert is_something_error(TypeError, validate_data_spec, nok_data, _get_no_extra_list_of_spec_spec())
 
-        def _get_list_of_int_spec():
-            class ListOfIntSpec:
-                list_of_int_field = Checker([LIST_OF], extra={LIST_OF: INT})
+        class ListOfIntSpec:
+            list_of_int_field = Checker([LIST_OF], extra={LIST_OF: INT})
 
-            return ListOfIntSpec
-
-        def _get_no_extra_list_of_int_spec():
-            class ListOfIntSpec:
-                list_of_int_field = Checker([LIST_OF], LIST_OF=INT)
-
-            return ListOfIntSpec
+        class ListOfIntNoExtraSpec:
+            list_of_int_field = Checker([LIST_OF], LIST_OF=INT)
 
         ok_data = dict(list_of_int_field=[1, 2, 3])
-        assert validate_data_spec(ok_data, _get_list_of_int_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_list_of_int_spec())
+        assert validate_data_spec(ok_data, ListOfIntSpec)
+        assert validate_data_spec(ok_data, ListOfIntNoExtraSpec)
+
+        nok_with_non_list_data = dict(list_of_int_field={1: 1, 2: 2, 3: 3})
+        assert is_something_error(TypeError, validate_data_spec, nok_with_non_list_data, ListOfIntSpec)
 
         nok_data = dict(list_of_int_field=[1, 2, '3'])
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_list_of_int_spec())
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_no_extra_list_of_int_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, ListOfIntSpec)
+        assert is_something_error(TypeError, validate_data_spec, nok_data, ListOfIntNoExtraSpec)
+
+    def test_foreach(self):
+        class ChildSpec:
+            int_field = Checker([INT])
+            bool_field = Checker([BOOL])
+
+        class ParentSpec:
+            foreach_spec_field = Checker([FOREACH], FOREACH=SPEC, SPEC=ChildSpec)
+
+        ok_data = dict(
+            foreach_spec_field=(
+                dict(int_field=1, bool_field=False),
+                dict(int_field=2, bool_field=True),
+                dict(int_field=3, bool_field=False),
+            )
+        )
+        assert validate_data_spec(ok_data, ParentSpec)
+
+        class ForeachIntSpec:
+            foreach_spec_field = Checker([FOREACH], FOREACH=INT)
+
+        ok_data = dict(foreach_spec_field=(1, 2, 3))
+        assert validate_data_spec(ok_data, ForeachIntSpec)
+        ok_data = dict(foreach_spec_field=[1, 2, 3])
+        assert validate_data_spec(ok_data, ForeachIntSpec)
+        ok_data = dict(foreach_spec_field={1, 2, 3})
+        assert validate_data_spec(ok_data, ForeachIntSpec)
+        ok_data = dict(foreach_spec_field={1: 1, 2: 2, 3: 3})
+        assert validate_data_spec(ok_data, ForeachIntSpec)
 
     def test_one_of(self):
         def _get_one_of_spec():
@@ -1120,6 +1144,15 @@ class TestSpec(unittest.TestCase):
 
     def test_any_keys_set(self):
         @dsv_feature(any_keys_set={('a', 'b')})
+        class _AnyKeysSetEmptyFieldsSpec:
+            pass
+
+        assert validate_data_spec(dict(a=1, b=1), _AnyKeysSetEmptyFieldsSpec)
+        assert validate_data_spec(dict(a=1), _AnyKeysSetEmptyFieldsSpec)
+        assert validate_data_spec(dict(b=1), _AnyKeysSetEmptyFieldsSpec)
+        assert is_something_error(LookupError, validate_data_spec, dict(c=1), _AnyKeysSetEmptyFieldsSpec)
+
+        @dsv_feature(any_keys_set={('a', 'b')})
         class _AnyKeysSetSpec:
             a = Checker([INT], optional=True)
             b = Checker([INT], optional=True)
@@ -1127,7 +1160,6 @@ class TestSpec(unittest.TestCase):
         assert validate_data_spec(dict(a=1, b=1), _AnyKeysSetSpec)
         assert validate_data_spec(dict(a=1), _AnyKeysSetSpec)
         assert validate_data_spec(dict(b=1), _AnyKeysSetSpec)
-
         assert is_something_error(LookupError, validate_data_spec, dict(c=1), _AnyKeysSetSpec)
 
         @dsv_feature(any_keys_set={('a', 'b'), ('c', 'd')})

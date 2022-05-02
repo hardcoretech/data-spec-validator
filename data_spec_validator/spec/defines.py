@@ -1,7 +1,10 @@
+import warnings
 from abc import ABCMeta, abstractmethod
 from enum import Enum
 from functools import lru_cache, reduce
-from typing import Dict, Type, Union
+from typing import Any, Dict, List, Type, Union
+
+from .utils import raise_if
 
 # TYPE
 NONE = 'none'
@@ -25,6 +28,7 @@ DECIMAL_PLACE = 'decimal_place'
 SPEC = 'spec'
 LIST_OF = 'list_of'
 ONE_OF = 'one_of'
+FOREACH = 'foreach'
 DUMMY = 'dummy'
 ANY_KEY_EXISTS = 'any_key_exists'
 KEY_COEXISTS = 'key_coexists'
@@ -73,6 +77,7 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         DigitStrValidator,
         DummyValidator,
         EmailValidator,
+        ForeachValidator,
         IntValidator,
         JSONBoolValidator,
         JSONValidator,
@@ -114,6 +119,7 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         UUID: UUIDValidator(),
         REGEX: RegexValidator(),
         COND_EXIST: CondExistValidator(),
+        FOREACH: ForeachValidator(),
     }
 
 
@@ -134,7 +140,7 @@ def _get_check_2_validator_map() -> Dict[str, BaseValidator]:
     return validator_map
 
 
-def get_validator(check) -> Union[BaseValidator, BaseWrapper]:
+def get_validator(check: str) -> Union[BaseValidator, BaseWrapper]:
     found_idx = check.find(_wrapper_splitter)
     validator_map = _get_check_2_validator_map()
     ori_validator = validator_map.get(check[found_idx + 1 :], validator_map[DUMMY])
@@ -153,7 +159,7 @@ def get_unknown_field_value() -> UnknownFieldValue:
 
 
 class ValidateResult:
-    def __init__(self, spec=None, field=None, value=None, check=None, error=None):
+    def __init__(self, spec: Type = None, field: str = None, value: Any = None, check: str = None, error=None):
         # TODO: Output spec & check information when there's a debug message level for development.
         self.__spec = type(spec)
         self.__field = field
@@ -181,7 +187,15 @@ class CheckerOP(Enum):
 
 
 class Checker:
-    def __init__(self, checks, optional=False, allow_none=False, op=CheckerOP.ALL, extra=None, **kwargs):
+    def __init__(
+        self,
+        checks: List[str],
+        optional: bool = False,
+        allow_none: bool = False,
+        op: CheckerOP = CheckerOP.ALL,
+        extra: Union[Dict, None] = None,
+        **kwargs,
+    ):
         """
         checks: list of str(Check)
         optional: boolean
@@ -197,16 +211,24 @@ class Checker:
         self._allow_none = allow_none
 
         self._ensure(kwargs)
+
+        check_set = set(checks)
         if extra:
-            print('[DSV][WARNING] keyword: extra is gonna be deprecated')
+            warnings.warn('[DSV] keyword: extra is gonna be deprecated', DeprecationWarning)
         deprecating_checks = {KEY_COEXISTS, ANY_KEY_EXISTS}
-        for deprecating_check in deprecating_checks.intersection(set(checks)):
-            print(f'[DSV][WARNING] Check: {deprecating_check.upper()} is gonna be deprecated')
+        for deprecating_check in deprecating_checks.intersection(check_set):
+            if deprecating_check == KEY_COEXISTS:
+                warnings.warn(f'[DSV] Use COND_EXIST instead of {deprecating_check.upper()} ', DeprecationWarning)
+            elif deprecating_check == ANY_KEY_EXISTS:
+                warnings.warn(
+                    f'[DSV] Use @dsv_feature(any_keys_set...) instead of {deprecating_check.upper()}',
+                    DeprecationWarning,
+                )
 
         self.extra = self._merge_extra_kwargs(extra or {}, kwargs)
 
     @staticmethod
-    def _merge_extra_kwargs(deprecated_extra: dict, check_kwargs: dict) -> dict:
+    def _merge_extra_kwargs(deprecated_extra: Dict, check_kwargs: Dict) -> Dict:
         extra = deprecated_extra.copy()
 
         all_keys = set(_get_check_2_validator_map().keys())
@@ -216,13 +238,12 @@ class Checker:
                 extra[lower_arg_k] = arg_v
         return extra
 
-    def _ensure(self, check_kwargs):
+    def _ensure(self, check_kwargs: Dict):
         def __ensure_upper_case(_kwargs):
             non_upper = list(filter(lambda k: not k.isupper(), _kwargs.keys()))
-            if non_upper:
-                raise TypeError(f'Keyword must be upper-cased: {non_upper}')
+            raise_if(bool(non_upper), TypeError(f'Keyword must be upper-cased: {non_upper}'))
 
-        def __ensure_no_repeated_forbidden(_kwargs):
+        def __ensure_no_repeated_forbidden(_kwargs: Dict):
             blacklist = {'optional', 'allow_none', 'op', 'extra'}
 
             def _check_in_blacklist(acc, key):
@@ -231,12 +252,12 @@ class Checker:
                 return acc
 
             forbidden = list(reduce(_check_in_blacklist, _kwargs.keys(), set()))
-            if forbidden:
-                forbidden.sort()
-                raise TypeError(f'Forbidden keyword arguments: {", ".join(forbidden)}')
+            forbidden.sort()
+            raise_if(bool(forbidden), TypeError(f'Forbidden keyword arguments: {", ".join(forbidden)}'))
 
-        if self._optional and len(self.checks) == 0:
-            raise ValueError('Require at least 1 check when set optional to True')
+        raise_if(
+            self._optional and len(self.checks) == 0, ValueError('Require at least 1 check when set optional=True')
+        )
 
         __ensure_upper_case(check_kwargs)
         __ensure_no_repeated_forbidden(check_kwargs)
@@ -271,7 +292,7 @@ def get_msg_level() -> MsgLv:
     return __message_level
 
 
-def reset_msg_level(vague=False):
+def reset_msg_level(vague: bool = False):
     """
     Setting vague=True, all error messages will be replaced to 'field: XXX not well-formatted'.
     Otherwise, the message is as usual showing the reason.
