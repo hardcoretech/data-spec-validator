@@ -169,7 +169,7 @@ class DummyValidator(BaseValidator):
 
     @staticmethod
     def validate(value, extra, data):
-        raise_if(True, NotImplementedError())
+        raise NotImplementedError
 
 
 class IntValidator(BaseValidator):
@@ -506,7 +506,7 @@ class RegexValidator(BaseValidator):
         elif match_method == 'search':
             match_func = re.search
         else:
-            raise_if(True, RuntimeError(f'unsupported match method: {match_method}'))
+            raise RuntimeError(f'unsupported match method: {match_method}')
 
         ok = type(value) == str and match_func and match_func(pattern, value)
         info = '' if ok else ValueError(f'{repr(value)} does not match "{error_regex_param}"')

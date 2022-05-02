@@ -52,7 +52,7 @@ class BaseValidator(metaclass=ABCMeta):
     @staticmethod
     @abstractmethod
     def validate(value, extra, data):
-        raise_if(True, NotImplementedError())
+        raise NotImplementedError
 
 
 class UnknownFieldValue:

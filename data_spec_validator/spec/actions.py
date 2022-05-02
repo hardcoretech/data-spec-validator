@@ -70,5 +70,5 @@ def validate_data_spec(data, spec, **kwargs) -> bool:
 
     if not ok and not nothrow:
         error = _find_most_significant_error(failures)
-        raise_if(True, error)
+        raise error
     return ok
