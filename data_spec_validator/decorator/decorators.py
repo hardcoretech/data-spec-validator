@@ -78,7 +78,7 @@ def _extract_request(*args):
         return req
 
 
-def _do_validate(data, spec):
+def _do_validate(data, spec, throw_error):
     # Raise DRF's exception to let DRF's exception handler do something about it.
     error = None
     try:
@@ -95,10 +95,19 @@ def _do_validate(data, spec):
         error = drf_exceptions.ParseError(str(parse_err.args))
 
     if error:
+        if callable(throw_error):
+            # the throw_error is the function and pass the error as the parameter
+            # it may just raise the error or return the new exception
+            error = throw_error(error)
+        elif isinstance(throw_error, Exception):
+            # the throw_error is the known error and override the original
+            # error to the new exception
+            error = throw_error
+
         raise error
 
 
-def dsv(spec):
+def dsv(spec, throw_error=None):
     """
     Used at any function where view instance or request is the first argument.
     e.g. 1) APIView request method (get/post/put/patch/delete)
@@ -112,7 +121,7 @@ def dsv(spec):
         def wrapped(*args, **kwargs):
             req = _extract_request(*args)
             data = _extract_request_param_data(req, **kwargs)
-            _do_validate(data, spec)
+            _do_validate(data, spec, throw_error=throw_error)
             return func(*args, **kwargs)
 
         return wrapped
@@ -120,13 +129,13 @@ def dsv(spec):
     return wrapper
 
 
-def dsv_request_meta(spec):
+def dsv_request_meta(spec, throw_error=None):
     def wrapper(func):
         @wraps(func)
         def wrapped(*args, **kwargs):
             req = _extract_request(*args)
             meta = _extract_request_meta(req, **kwargs)
-            _do_validate(meta, spec)
+            _do_validate(meta, spec, throw_error)
             return func(*args, **kwargs)
 
         return wrapped
