@@ -1,0 +1,14 @@
+name: test
+
+on:
+  - pull_request
+
+jobs:
+  audting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install the python packages and run test
+        run: |
+          pip install -r requirements-dev.txt
+          pytest -vv
