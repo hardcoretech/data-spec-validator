@@ -142,5 +142,61 @@ class TestDSV(unittest.TestCase):
             non_view.decorated_func(fake_args, field_a='1')
 
 
+class TestThrowError(unittest.TestCase):
+    def _simulate_http_request(self, throw_error=None, *args, **kwargs):
+        class _ViewSpec:
+            named_arg = Checker([DIGIT_STR])
+
+        class _View(View):
+            @dsv(_ViewSpec, throw_error=throw_error)
+            def decorated_func(self, request, named_arg):
+                pass
+
+        factory = RequestFactory()
+        req = factory.request()
+        req = Request(req)
+        view = _View()
+
+        view.decorated_func(req, *args, **kwargs)
+
+    def _test_validate_fail(self, *args, **kwargs):
+        # original behaivor
+        with self.assertRaises(Exception):
+            self._simulate_http_request(*args, **kwargs)
+
+        # raise the known exception
+        with self.assertRaises(RuntimeError):
+            self._simulate_http_request(throw_error=RuntimeError, *args, **kwargs)
+
+        # raise the exception by the passed function
+        def raise_io_error(exc: Exception):
+            raise IOError()
+
+        with self.assertRaises(IOError):
+            self._simulate_http_request(throw_error=raise_io_error, *args, **kwargs)
+
+    def test_validate_pass(self):
+        # original behaivor
+        self._simulate_http_request(named_arg='1')
+
+        # raise the known exception
+        self._simulate_http_request(throw_error=RuntimeError, named_arg='1')
+
+        # raise the exception by the passed function
+        def raise_io_error(exc: Exception):
+            raise IOError()
+
+        self._simulate_http_request(throw_error=raise_io_error, named_arg='1')
+
+    def test_missing_named_args(self):
+        self._test_validate_fail()
+
+    def test_wrong_named_args_type(self):
+        self._test_validate_fail(named_arg=1)
+        self._test_validate_fail(named_arg=1.2)
+        self._test_validate_fail(named_arg=None)
+        self._test_validate_fail(named_arg='C')
+
+
 if __name__ == '__main__':
     unittest.main()
