@@ -67,7 +67,6 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
     from data_spec_validator.spec.validators import (
         AmountRangeValidator,
         AmountValidator,
-        AnyKeyExistsValidator,
         BoolValidator,
         CondExistValidator,
         DateRangeValidator,
@@ -81,7 +80,6 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         IntValidator,
         JSONBoolValidator,
         JSONValidator,
-        KeyCoexistsValidator,
         LengthValidator,
         ListOfValidator,
         ListValidator,
@@ -113,8 +111,6 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         DATE: DateValidator(),
         DATE_RANGE: DateRangeValidator(),
         DUMMY: DummyValidator(),
-        ANY_KEY_EXISTS: AnyKeyExistsValidator(),
-        KEY_COEXISTS: KeyCoexistsValidator(),
         EMAIL: EmailValidator(),
         UUID: UUIDValidator(),
         REGEX: RegexValidator(),
@@ -158,14 +154,31 @@ def get_unknown_field_value() -> UnknownFieldValue:
     return UnknownFieldValue()
 
 
+class ErrorMode(Enum):
+    MSE = 'most_significant'
+    ALL = 'all'
+
+
+class DSVError(Exception):
+    def __init__(self, *errors: List[Type[Exception]]):
+        self._errors = errors
+
+    def __str__(self, *args, **kwargs):
+        return repr(self._errors)
+
+
 class ValidateResult:
     def __init__(self, spec: Type = None, field: str = None, value: Any = None, check: str = None, error=None):
         # TODO: Output spec & check information when there's a debug message level for development.
-        self.__spec = type(spec)
+        self.__spec = spec.__name__ if spec else None
         self.__field = field
         self.__value = value
         self.__check = check
         self.__error = error
+
+    @property
+    def spec(self) -> str:
+        return self.__spec
 
     @property
     def field(self) -> str:

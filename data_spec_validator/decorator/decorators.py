@@ -8,7 +8,7 @@ try:
     from rest_framework.request import Request
 except ModuleNotFoundError as e:
     print(f'[DSV][WARNING] decorator: "dsv" cannot be used, {e}')
-from data_spec_validator.spec import raise_if, validate_data_spec
+from data_spec_validator.spec import DSVError, raise_if, validate_data_spec
 
 
 def _is_request(obj):
@@ -91,7 +91,7 @@ def _do_validate(data, spec):
         error = drf_exceptions.ValidationError(str(value_err.args))
     except PermissionError as perm_err:
         error = drf_exceptions.PermissionDenied(str(perm_err.args))
-    except (LookupError, TypeError, RuntimeError) as parse_err:
+    except (LookupError, TypeError, RuntimeError, DSVError) as parse_err:
         error = drf_exceptions.ParseError(str(parse_err.args))
 
     if error:

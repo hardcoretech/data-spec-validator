@@ -1,6 +1,17 @@
 Changelog
 =========
 
+1.9.0
+-----
+
+Changes:
+
+- [feature] new dsv_feature `err_mode` to collect all validation errors into exception arguments.
+- [improvement] Spec name is now added before the field name in error message.
+- Check `KEY_COEXISTS`, `ANY_KEY_EXISTS` are deprecated.
+- Update README
+
+
 1.8.0
 -----
 
