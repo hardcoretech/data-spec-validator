@@ -1,4 +1,7 @@
-from .defines import MsgLv, UnknownFieldValue, ValidateResult, get_msg_level
+from typing import List, Tuple
+
+from .defines import DSVError, ErrorMode, MsgLv, UnknownFieldValue, ValidateResult, get_msg_level
+from .features import get_err_mode
 from .utils import raise_if
 from .validators import SpecValidator
 
@@ -8,7 +11,7 @@ def _wrap_error_with_field_info(failure) -> Exception:
         return RuntimeError(f'field: {failure.field} not well-formatted')
     if isinstance(failure.value, UnknownFieldValue):
         return LookupError(f'field: {failure.field} missing')
-    msg = f'field: {failure.field}, reason: {failure.error}'
+    msg = f'field: {failure.spec}.{failure.field}, reason: {failure.error}'
     return type(failure.error)(msg)
 
 
@@ -28,10 +31,7 @@ def _flatten_results(failures, errors=None):
         _flatten_results(failures.error, errors)
 
 
-def _find_most_significant_error(failures) -> Exception:
-    errors = []
-    _flatten_results(failures, errors)
-
+def _find_most_significant_error(errors: List[Exception]) -> Exception:
     # Build error list by error types
     err_map = {}
     for err in errors:
@@ -63,12 +63,21 @@ def _find_most_significant_error(failures) -> Exception:
     return main_error
 
 
+def _extract_error(spec, failures: List[Tuple[bool, List[ValidateResult]]]) -> Exception:
+    errors = []
+    _flatten_results(failures, errors)
+    err_mode = get_err_mode(spec)
+    if err_mode == ErrorMode.MSE:
+        return _find_most_significant_error(errors)
+    return DSVError(*errors)
+
+
 def validate_data_spec(data, spec, **kwargs) -> bool:
     # SPEC validator as the root validator
     ok, failures = SpecValidator.validate(data, {SpecValidator.name: spec}, None)
     nothrow = kwargs.get('nothrow', False)
 
     if not ok and not nothrow:
-        error = _find_most_significant_error(failures)
+        error = _extract_error(spec, failures)
         raise error
     return ok

@@ -132,12 +132,12 @@ validate_data_spec(another_data, AnotherSpec) # raise Exception
 ### DATE_RANGE
 `date_range_field = Checker([DATE_RANGE], DATE_RANGE=dict(min='2000-01-01', max='2010-12-31'))`
 
-### ANY_KEY_EXISTS (postpone deprecation, target to remove in 1.9.0)
+### ~~ANY_KEY_EXISTS~~ (deprecated)
 #### _Use @dsv_feature(any_keys_set={...}) instead, see below_
 
 ~~`any_key_checker = Checker([ANY_KEY_EXISTS], ANY_KEY_EXISTS={'key1', 'key2', 'key3'})`~~
 
-### KEY_COEXISTS (postpone deprecation, target to remove in 1.9.0)
+### ~~KEY_COEXISTS~~ (deprecated)
 #### _Use COND_EXIST instead, see below_
 ~~`key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])`~~
 
@@ -279,6 +279,37 @@ validate_data_spec(dict(c=1), _AnyKeysSetSpec) # raise exception
 validate_data_spec(dict(d=1), _AnyKeysSetSpec) # raise exception
 validate_data_spec(dict(e=1), _AnyKeysSetSpec) # raise exception
 ```
+---
+### Feature: Error Mode, i.e. ErrorMode.ALL, ErrorMode.MSE(default behavior)
+NOTE 1: `ErrorMode.MSE` stands for MOST-SIGNIFICANT-ERROR
+
+NOTE 2: The validation results respect to the ErrorMode feature config on the **OUTER-MOST** spec. All nested specs
+        follow the **OUTER-MOST** spec configuration, for more reference, see `test_spec.py:test_err_mode`
+```python
+from data_spec_validator.spec import Checker, validate_data_spec, dsv_feature, LENGTH, STR, AMOUNT, ErrorMode, INT, DIGIT_STR
+
+@dsv_feature(err_mode=ErrorMode.ALL)
+class _ErrModeAllSpec:
+    a = Checker([INT])
+    b = Checker([DIGIT_STR])
+    c = Checker([LENGTH, STR, AMOUNT], LENGTH=dict(min=3, max=5))
+
+nok_data = dict(
+    a=True,
+    b='abc',
+    c='22',
+)
+
+validate_data_spec(nok_data, _ErrModeAllSpec) # raise DSVError
+"""
+A DSVError is raised with 3 errors in args.
+(TypeError('field: _ErrModeAllSpec.a, reason: True is not an integer',),
+ TypeError("field: _ErrModeAllSpec.b, reason: 'abc' is not a digit str",),
+ ValueError("field: _ErrModeAllSpec.c, reason: Length of '22' must be between 3 and 5",))
+
+"""
+```
+
 ---
 ## Test
 ```bash

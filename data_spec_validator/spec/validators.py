@@ -117,6 +117,8 @@ def _validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
                     ok, error = False, TypeError(f'{repr(_value)} is not a spec of {_spec}, detail: {repr(ae)}')
                 else:
                     ok, error = False, RuntimeError(f'{repr(ae)}')
+            except NotImplementedError:
+                raise
             except Exception as e:
                 # For any unwell-handled case, go this way for now.
                 ok, error = False, RuntimeError(f'{repr(e)}')
@@ -178,7 +180,7 @@ class IntValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         ok = type(value) is int
-        info = '' if ok else TypeError(f'{repr(value)} is not a integer')
+        info = '' if ok else TypeError(f'{repr(value)} is not an integer')
         return ok, info
 
 

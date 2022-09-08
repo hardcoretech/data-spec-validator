@@ -13,6 +13,7 @@ from data_spec_validator.spec import (
     DATE_RANGE,
     DECIMAL_PLACE,
     DICT,
+    DIGIT_STR,
     EMAIL,
     FOREACH,
     INT,
@@ -31,6 +32,8 @@ from data_spec_validator.spec import (
     UUID,
     Checker,
     CheckerOP,
+    DSVError,
+    ErrorMode,
     dsv_feature,
     not_,
     reset_msg_level,
@@ -1019,31 +1022,12 @@ class TestSpec(unittest.TestCase):
 
             return AnyKeyExistsSpec
 
-        def _get_no_extra_any_key_exists_spec():
-            class AnyKeyExistsSpec:
-                test_checker = Checker([ANY_KEY_EXISTS], ANY_KEY_EXISTS={'key1', 'key2', 'key3'})
-
-            return AnyKeyExistsSpec
-
         ok_data = dict(key1=1)
-        assert validate_data_spec(ok_data, _get_any_key_exists_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_any_key_exists_spec())
-
-        ok_data = dict(key2=1, key3=1)
-        assert validate_data_spec(ok_data, _get_any_key_exists_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_any_key_exists_spec())
-
-        nok_data = dict(key=1)
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_any_key_exists_spec())
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_any_key_exists_spec())
+        with self.assertRaises(NotImplementedError) as ctx:
+            validate_data_spec(ok_data, _get_any_key_exists_spec())
+        assert type(ctx.exception) == NotImplementedError
 
     def test_key_coexist(self):
-        def _get_key_coexist_spec():
-            class KeyCoexistsSpec:
-                key1 = Checker([KEY_COEXISTS], extra={KEY_COEXISTS: ['key2']})
-
-            return KeyCoexistsSpec
-
         def _get_no_extra_key_coexist_spec():
             class KeyCoexistsSpec:
                 key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])
@@ -1051,16 +1035,9 @@ class TestSpec(unittest.TestCase):
             return KeyCoexistsSpec
 
         ok_data = dict(key1=1, key2=1)
-        assert validate_data_spec(ok_data, _get_key_coexist_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_key_coexist_spec())
-
-        nok_data = dict(key2=1)
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_key_coexist_spec())
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_key_coexist_spec())
-
-        nok_data = dict(key=1)
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_key_coexist_spec())
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_key_coexist_spec())
+        with self.assertRaises(NotImplementedError) as ctx:
+            validate_data_spec(ok_data, _get_no_extra_key_coexist_spec())
+        assert type(ctx.exception) == NotImplementedError
 
     def test_not_checker(self):
         def _get_non_bool_spec():
@@ -1184,6 +1161,65 @@ class TestSpec(unittest.TestCase):
         assert is_something_error(LookupError, validate_data_spec, dict(c=1), _AnyKeysSetSpec)
         assert is_something_error(LookupError, validate_data_spec, dict(d=1), _AnyKeysSetSpec)
         assert is_something_error(LookupError, validate_data_spec, dict(e=1), _AnyKeysSetSpec)
+
+    def test_err_mode(self):
+        @dsv_feature(err_mode=ErrorMode.ALL)
+        class _ErrModeAllSpec:
+            a = Checker([INT])
+            b = Checker([DIGIT_STR])
+            c = Checker([LENGTH, STR, AMOUNT], LENGTH=dict(min=3, max=5))
+
+        nok_data = dict(
+            a=True,
+            b='abc',
+            c='22',
+        )
+
+        with self.assertRaises(DSVError) as context:
+            validate_data_spec(nok_data, _ErrModeAllSpec)
+        assert len(context.exception.args) == 3
+
+        def _get_nested_err_mode_spec(mode):
+            @dsv_feature()
+            class LeafSpec:
+                int_f = Checker([INT])
+                str_f = Checker([STR])
+                bool_f = Checker([BOOL])
+
+            class MidLeafSpec:
+                int_f = Checker([INT])
+                str_f = Checker([STR])
+                leaf_f = Checker([SPEC], SPEC=LeafSpec)
+
+            @dsv_feature(err_mode=mode)
+            class RootSpec:
+                int_f = Checker([INT])
+                ml_f = Checker([SPEC], SPEC=MidLeafSpec)
+                bool_f = Checker([BOOL])
+
+            return RootSpec
+
+        nok_data2 = dict(
+            int_f='a',
+            ml_f=dict(
+                int_f=3.3,
+                str_f='ok',
+                leaf_f=dict(
+                    int_f=1,
+                    str_f=True,
+                    bool_f='non-bool',
+                ),
+            ),
+            bool_f='22',
+        )
+
+        with self.assertRaises(DSVError) as context:
+            validate_data_spec(nok_data2, _get_nested_err_mode_spec(ErrorMode.ALL))
+        assert len(context.exception.args) == 5
+
+        with self.assertRaises(TypeError) as context:
+            validate_data_spec(nok_data2, _get_nested_err_mode_spec(ErrorMode.MSE))
+        assert len(context.exception.args) == 1
 
     def test_conditional_existence(self):
         """

@@ -16,7 +16,7 @@ setuptools.setup(
     version=about['__version__'],
     author="GoFreight",
     author_email="pypi@hardcoretech.co",
-    description="Simple validation tool for API",
+    description="Validation tool for API/Function parameters",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/hardcoretech/data-spec-validator",

@@ -31,6 +31,8 @@ from .defines import (
     UUID,
     Checker,
     CheckerOP,
+    DSVError,
+    ErrorMode,
     not_,
     reset_msg_level,
 )
