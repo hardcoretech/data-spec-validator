@@ -73,6 +73,21 @@ validate_data_spec(another_data, AnotherSpec) # return True
 another_data = dict(field='4')
 validate_data_spec(another_data, AnotherSpec) # raise Exception
 ```
+
+* Multiple rows data
+```python
+from data_spec_validator.spec import INT, STR, Checker, validate_data_spec
+
+class SingleSpec:
+    f_a = Checker([INT])
+    f_b = Checker([STR])
+
+multirow_data = [dict(f_a=1, f_b='1'), dict(f_a=2, f_b='2'), dict(f_a=3, f_b='3')]
+validate_data_spec(multirow_data, SingleSpec, multirow=True) # return True
+
+```
+
+
 ---
 ## Supported checks & sample usages (see `test_spec.py` for more cases)
 
@@ -187,6 +202,11 @@ class SomeView(APIView):
 
 @api_view(('POST',))
 @dsv(SomeViewSpec)
+def customer_create(request):
+    pass
+
+@api_view(('POST',))
+@dsv(SomeViewSpec, multirow=True)  # For type(request.POST) is list
 def customer_create(request):
     pass
 ```

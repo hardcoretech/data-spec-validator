@@ -1,6 +1,16 @@
 Changelog
 =========
 
+
+2.0.0
+-----
+
+Changes:
+
+- [feature] add `multirow` option in `@dsv` and `def validate_data_spec` to validate list of SPEC naturally.
+- Update README
+
+
 1.9.0
 -----
 

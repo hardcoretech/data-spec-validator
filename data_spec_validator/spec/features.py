@@ -1,6 +1,6 @@
 from typing import Callable, Optional, Set, Tuple, Type, Union
 
-from .defines import ErrorMode
+from .defines import ErrorMode, Checker, FOREACH, SPEC
 
 
 class _DSVFeatureParams:
@@ -61,3 +61,11 @@ def is_strict(spec) -> bool:
 def get_any_keys_set(spec) -> Set[Tuple[str, ...]]:
     feat_params: Union[_DSVFeatureParams, None] = getattr(spec, _FEAT_PARAMS, None)
     return feat_params.any_keys_set if feat_params else set()
+
+
+def repack_multirow(data, spec):
+    class _InternalMultiSpec:
+        dsv_multirow = Checker([FOREACH], FOREACH=SPEC, SPEC=spec)
+
+    new_data = dict(dsv_multirow=data)
+    return new_data, _InternalMultiSpec
