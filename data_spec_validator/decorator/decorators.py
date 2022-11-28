@@ -1,5 +1,5 @@
-from typing import List, Dict, Union
 from functools import wraps
+from typing import Dict, List, Union
 
 try:
     import rest_framework.exceptions as drf_exceptions

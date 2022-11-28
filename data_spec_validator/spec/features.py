@@ -1,6 +1,6 @@
 from typing import Callable, Optional, Set, Tuple, Type, Union
 
-from .defines import ErrorMode, Checker, FOREACH, SPEC
+from .defines import FOREACH, SPEC, Checker, ErrorMode
 
 
 class _DSVFeatureParams:

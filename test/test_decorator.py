@@ -2,11 +2,12 @@ import itertools
 import unittest
 from io import StringIO
 from unittest.mock import patch
+
 from django.conf import settings
 from parameterized import parameterized
 
 from data_spec_validator.decorator import dsv, dsv_request_meta
-from data_spec_validator.spec import DIGIT_STR, ONE_OF, Checker, STR
+from data_spec_validator.spec import DIGIT_STR, ONE_OF, STR, Checker
 
 settings.configure()
 

@@ -1608,7 +1608,6 @@ class TestMessageLevel(unittest.TestCase):
 
 class TestMultipleRowSpec(unittest.TestCase):
     def test_multirow_spec(self):
-
         def _get_singlerow_spec():
             class SingleRowSpec:
                 i_field = Checker([INT])
