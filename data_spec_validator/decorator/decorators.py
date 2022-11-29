@@ -1,4 +1,5 @@
 from functools import wraps
+from typing import Dict, List, Union
 
 try:
     import rest_framework.exceptions as drf_exceptions
@@ -78,15 +79,22 @@ def _extract_request(*args):
         return req
 
 
-def _do_validate(data, spec):
+def _is_data_type_list(data: Union[Dict, List]) -> bool:
+    return type(data) == list
+
+
+def _eval_is_multirow(multirow: bool, data: Union[Dict, List]) -> bool:
+    # NOTE: is_multirow by evaluating list type will be deprecated, so the client must specify multirow=True
+    #       explicitly in the future.
+    return multirow or _is_data_type_list(data)
+
+
+def _do_validate(data, spec, multirow=False):
     # Raise DRF's exception to let DRF's exception handler do something about it.
     error = None
     try:
-        if type(data) == list:
-            for datum in data:
-                validate_data_spec(datum, spec)
-        else:
-            validate_data_spec(data, spec)
+        is_multirow = _eval_is_multirow(multirow, data)
+        validate_data_spec(data, spec, multirow=is_multirow)
     except ValueError as value_err:
         error = drf_exceptions.ValidationError(str(value_err.args))
     except PermissionError as perm_err:
@@ -98,7 +106,7 @@ def _do_validate(data, spec):
         raise error
 
 
-def dsv(spec):
+def dsv(spec, multirow=False):
     """
     Used at any function where view instance or request is the first argument.
     e.g. 1) APIView request method (get/post/put/patch/delete)
@@ -112,7 +120,7 @@ def dsv(spec):
         def wrapped(*args, **kwargs):
             req = _extract_request(*args)
             data = _extract_request_param_data(req, **kwargs)
-            _do_validate(data, spec)
+            _do_validate(data, spec, multirow)
             return func(*args, **kwargs)
 
         return wrapped

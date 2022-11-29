@@ -42,9 +42,9 @@ from data_spec_validator.spec import (
 from data_spec_validator.spec.validators import BaseValidator
 
 
-def is_something_error(error, func, *args):
+def is_something_error(error, func, *args, **kwargs):
     try:
-        func(*args)
+        func(*args, **kwargs)
     except error:
         return True
     return False
@@ -1604,6 +1604,27 @@ class TestMessageLevel(unittest.TestCase):
             validate_data_spec(nok_data, _get_int_spec())
         except Exception as e:
             assert str(e).find('reason') >= 0
+
+
+class TestMultipleRowSpec(unittest.TestCase):
+    def test_multirow_spec(self):
+        def _get_singlerow_spec():
+            class SingleRowSpec:
+                i_field = Checker([INT])
+                s_field = Checker([STR])
+
+            return SingleRowSpec
+
+        ok_data = [dict(i_field=1, s_field='1'), dict(i_field=2, s_field='2'), dict(i_field=3, s_field='3')]
+        assert validate_data_spec(ok_data, _get_singlerow_spec(), multirow=True)
+
+        nok_data = [dict(i_field=1, s_field=1), dict(i_field=2, s_field='2')]
+        is_something_error(TypeError, validate_data_spec, nok_data, _get_singlerow_spec(), multirow=True)
+
+        with self.assertRaises(ValueError) as ctx:
+            nok_data = dict(i_field=1, s_field='1')
+            validate_data_spec(nok_data, _get_singlerow_spec(), multirow=True)
+        assert 'SingleRowSpec' in str(ctx.exception)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 from .defines import DSVError, ErrorMode, MsgLv, UnknownFieldValue, ValidateResult, get_msg_level
-from .features import get_err_mode
+from .features import get_err_mode, repack_multirow
 from .utils import raise_if
 from .validators import SpecValidator
 
@@ -63,10 +63,19 @@ def _find_most_significant_error(errors: List[Exception]) -> Exception:
     return main_error
 
 
+def _is_incorrect_multirow_spec(errors: List[Exception]) -> bool:
+    return any('_InternalMultiSpec' in str(e) for e in errors)
+
+
 def _extract_error(spec, failures: List[Tuple[bool, List[ValidateResult]]]) -> Exception:
     errors = []
     _flatten_results(failures, errors)
     err_mode = get_err_mode(spec)
+
+    if _is_incorrect_multirow_spec(errors):
+        msg = f'spec: {spec}, reason: incompatible data format for validation, an iterable object is needed'
+        return ValueError(msg)
+
     if err_mode == ErrorMode.MSE:
         return _find_most_significant_error(errors)
     return DSVError(*errors)
@@ -74,7 +83,8 @@ def _extract_error(spec, failures: List[Tuple[bool, List[ValidateResult]]]) -> E
 
 def validate_data_spec(data, spec, **kwargs) -> bool:
     # SPEC validator as the root validator
-    ok, failures = SpecValidator.validate(data, {SpecValidator.name: spec}, None)
+    (_data, _spec) = repack_multirow(data, spec) if kwargs.get('multirow', False) else (data, spec)
+    ok, failures = SpecValidator.validate(_data, {SpecValidator.name: _spec}, None)
     nothrow = kwargs.get('nothrow', False)
 
     if not ok and not nothrow:

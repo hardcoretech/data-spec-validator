@@ -1,12 +1,13 @@
 import itertools
 import unittest
 from io import StringIO
+from unittest.mock import patch
 
 from django.conf import settings
 from parameterized import parameterized
 
 from data_spec_validator.decorator import dsv, dsv_request_meta
-from data_spec_validator.spec import DIGIT_STR, ONE_OF, Checker
+from data_spec_validator.spec import DIGIT_STR, ONE_OF, STR, Checker
 
 settings.configure()
 
@@ -118,6 +119,42 @@ class TestDSV(unittest.TestCase):
 
         view = _View(request=fake_request)
         view.decorated_func(fake_request, **kwargs)
+
+    def test_req_list_data_with_no_multirow_set(self):
+        # arrange
+        payload = [{'test_a': 'TEST A1'}, {'test_a': 'TEST A2'}, {'test_a': 'TEST A3'}]
+        fake_request = _make_request(Request, method='POST', data=payload)
+        kwargs = {'test_b': 'TEST_B'}
+
+        class _ViewSingleRowSpec:
+            test_a = Checker([STR])
+
+        class _View(View):
+            @dsv(_ViewSingleRowSpec)
+            def decorated_func(self, request, *_args, **_kwargs):
+                pass
+
+        view = _View(request=fake_request)
+        view.decorated_func(fake_request, **kwargs)
+
+    def test_req_list_data_with_multirow_true(self):
+        # arrange
+        payload = [{'test_a': 'TEST A1'}, {'test_a': 'TEST A2'}, {'test_a': 'TEST A3'}]
+        fake_request = _make_request(WSGIRequest, method='POST', data=payload)
+        kwargs = {'test_b': 'TEST_B'}
+
+        class _ViewSingleRowSpec:
+            test_a = Checker([STR])
+
+        class _View(View):
+            @dsv(_ViewSingleRowSpec, multirow=True)
+            def decorated_func(self, request, *_args, **_kwargs):
+                pass
+
+        view = _View(request=fake_request)
+
+        with patch('data_spec_validator.decorator.decorators._is_data_type_list', return_value=False):
+            view.decorated_func(fake_request, **kwargs)
 
     def test_non_view_request(self):
         # arrange
