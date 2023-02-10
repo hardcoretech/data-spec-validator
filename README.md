@@ -94,6 +94,9 @@ validate_data_spec(multirow_data, SingleSpec, multirow=True) # return True
 ### INT
 `int_field = Checker([INT])`
 
+### FLOAT
+`float_field = Checker([FLOAT])`
+
 ### STR
 `str_field = Checker([STR])`
 
@@ -108,6 +111,12 @@ validate_data_spec(multirow_data, SingleSpec, multirow=True) # return True
 
 ### LIST
 `list_field = Checker([LIST])`
+
+### DATE_OBJECT
+`date_obj_field = Checker([DATE_OBJECT])`
+
+### DATETIME_OBJECT
+`datetime_obj_field = Checker([DATETIME_OBJECT])`
 
 ### NONE
 `none_field = Checker([NONE])`
