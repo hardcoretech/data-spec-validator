@@ -1,6 +1,15 @@
 Changelog
 =========
 
+2.1.0
+-----
+
+Changes:
+
+- [feature] add `FLOAT`, `DATE_OBJECT`, `DATETIME_OBJECT` check to validate python built-in type. Derived instances are
+  not considered valid and you can use custom spec in these cases.
+- Update README
+
 
 2.0.0
 -----
