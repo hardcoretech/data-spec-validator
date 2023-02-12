@@ -1,4 +1,5 @@
 import copy
+import datetime
 import json
 import re
 import uuid
@@ -14,12 +15,15 @@ from .defines import (
     BOOL,
     COND_EXIST,
     DATE,
+    DATE_OBJECT,
     DATE_RANGE,
+    DATETIME_OBJECT,
     DECIMAL_PLACE,
     DICT,
     DIGIT_STR,
     DUMMY,
     EMAIL,
+    FLOAT,
     FOREACH,
     INT,
     JSON,
@@ -184,6 +188,16 @@ class IntValidator(BaseValidator):
         return ok, info
 
 
+class FloatValidator(BaseValidator):
+    name = FLOAT
+
+    @staticmethod
+    def validate(value, extra, data):
+        ok = type(value) is float
+        info = '' if ok else TypeError(f'{repr(value)} is not a float')
+        return ok, info
+
+
 class StrValidator(BaseValidator):
     name = STR
 
@@ -256,6 +270,26 @@ class DictValidator(BaseValidator):
     def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         ok = type(value) is dict
         info = TypeError(f'{repr(value)} is not a dict')
+        return ok, info
+
+
+class DateObjectValidator(BaseValidator):
+    name = DATE_OBJECT
+
+    @staticmethod
+    def validate(value, extra, data):
+        ok = type(value) is datetime.date
+        info = '' if ok else TypeError(f'{repr(value)} is not a date object')
+        return ok, info
+
+
+class DatetimeObjectValidator(BaseValidator):
+    name = DATETIME_OBJECT
+
+    @staticmethod
+    def validate(value, extra, data):
+        ok = type(value) is datetime.datetime
+        info = '' if ok else TypeError(f'{repr(value)} is not a datetime object')
         return ok, info
 
 

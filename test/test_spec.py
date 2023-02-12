@@ -1,3 +1,4 @@
+import datetime
 import unittest
 import uuid
 from datetime import date
@@ -39,6 +40,7 @@ from data_spec_validator.spec import (
     reset_msg_level,
     validate_data_spec,
 )
+from data_spec_validator.spec.defines import DATE_OBJECT, DATETIME_OBJECT, FLOAT
 from data_spec_validator.spec.validators import BaseValidator
 
 
@@ -71,6 +73,19 @@ class TestSpec(unittest.TestCase):
 
         nok_data = dict(int_field='3')
         assert is_something_error(TypeError, validate_data_spec, nok_data, _get_int_spec())
+
+    def test_float(self):
+        def _get_float_spec():
+            class FloatSpec:
+                float_field = Checker([FLOAT])
+
+            return FloatSpec
+
+        ok_data = dict(float_field=3.0)
+        assert validate_data_spec(ok_data, _get_float_spec())
+
+        nok_data = dict(float_field=3)
+        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_float_spec())
 
     def test_str(self):
         def _get_str_spec():
@@ -189,6 +204,32 @@ class TestSpec(unittest.TestCase):
 
         nok_data = dict(dict_field=[1, 2, 3])
         assert is_something_error(TypeError, validate_data_spec, nok_data, _get_dict_spec())
+
+    def test_date_object(self):
+        def _get_date_object_spec():
+            class DateSpec:
+                date_object_field = Checker([DATE_OBJECT])
+
+            return DateSpec
+
+        ok_data = dict(date_object_field=datetime.date(2023, 2, 9))
+        assert validate_data_spec(ok_data, _get_date_object_spec())
+
+        nok_data = dict(date_object_field=datetime.datetime(2023, 2, 9, 12, 34))
+        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_date_object_spec())
+
+    def test_datetime_object(self):
+        def _get_datetime_object_spec():
+            class DatetimeSpec:
+                datetime_object_field = Checker([DATETIME_OBJECT])
+
+            return DatetimeSpec
+
+        ok_data = dict(datetime_object_field=datetime.datetime(2023, 2, 9, 12, 34))
+        assert validate_data_spec(ok_data, _get_datetime_object_spec())
+
+        nok_data = dict(datetime_object_field=datetime.date(2023, 2, 9))
+        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_datetime_object_spec())
 
     def test_optional(self):
         def _get_optional_spec():

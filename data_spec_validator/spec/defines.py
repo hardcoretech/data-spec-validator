@@ -9,6 +9,7 @@ from .utils import raise_if
 # TYPE
 NONE = 'none'
 INT = 'int'
+FLOAT = 'float'
 DIGIT_STR = 'digit_str'  # URL params cannot distinguish from strings and numbers
 STR = 'str'
 BOOL = 'bool'
@@ -16,6 +17,8 @@ JSON = 'json'
 JSON_BOOL = 'json_bool'
 LIST = 'list'
 DICT = 'dict'
+DATE_OBJECT = 'date_obj'
+DATETIME_OBJECT = 'datetime_obj'
 SELF = 'self'
 
 # VALUE
@@ -69,13 +72,16 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         AmountValidator,
         BoolValidator,
         CondExistValidator,
+        DateObjectValidator,
         DateRangeValidator,
+        DatetimeObjectValidator,
         DateValidator,
         DecimalPlaceValidator,
         DictValidator,
         DigitStrValidator,
         DummyValidator,
         EmailValidator,
+        FloatValidator,
         ForeachValidator,
         IntValidator,
         JSONBoolValidator,
@@ -93,6 +99,7 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
 
     return {
         INT: IntValidator(),
+        FLOAT: FloatValidator(),
         STR: StrValidator(),
         DIGIT_STR: DigitStrValidator(),
         BOOL: BoolValidator(),
@@ -101,6 +108,8 @@ def get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         NONE: NoneValidator(),
         JSON: JSONValidator(),
         JSON_BOOL: JSONBoolValidator(),
+        DATE_OBJECT: DateObjectValidator(),
+        DATETIME_OBJECT: DatetimeObjectValidator(),
         ONE_OF: OneOfValidator(),
         SPEC: SpecValidator(),
         LIST_OF: ListOfValidator(),
