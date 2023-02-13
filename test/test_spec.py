@@ -11,11 +11,14 @@ from data_spec_validator.spec import (
     BOOL,
     COND_EXIST,
     DATE,
+    DATE_OBJECT,
     DATE_RANGE,
+    DATETIME_OBJECT,
     DECIMAL_PLACE,
     DICT,
     DIGIT_STR,
     EMAIL,
+    FLOAT,
     FOREACH,
     INT,
     JSON,
@@ -40,7 +43,6 @@ from data_spec_validator.spec import (
     reset_msg_level,
     validate_data_spec,
 )
-from data_spec_validator.spec.defines import DATE_OBJECT, DATETIME_OBJECT, FLOAT
 from data_spec_validator.spec.validators import BaseValidator
 
 
