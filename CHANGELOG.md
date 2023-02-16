@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.1.1
+-----
+
+Changes:
+
+- [fix] Export `FLOAT`, `DATE_OBJECT`, `DATETIME_OBJECT` check str
+
+
 2.1.0
 -----
 
