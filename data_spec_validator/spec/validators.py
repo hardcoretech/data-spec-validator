@@ -349,11 +349,11 @@ class SpecValidator(BaseValidator):
     def _extract_fields(spec) -> List[str]:
         raise_if(type(spec) != type, RuntimeError(f'{spec} should be just a class'))
 
-        def _pick_checker_field(acc, item):
-            if isinstance(item[1], Checker):
-                acc.append(item[0])
-            return acc
-        return list(functools.reduce(_pick_checker_field, spec.__dict__.items(), []))
+        return [
+            f_name 
+            for f_name, checker in spec.__dict__.items()
+            if isinstance(checker, Checker)
+        ]
 
     @staticmethod
     def validate(value, extra, data) -> Tuple[bool, List[Tuple[bool, List[ValidateResult]]]]:
