@@ -45,119 +45,81 @@ from data_spec_validator.spec import (
 )
 from data_spec_validator.spec.validators import BaseValidator
 
-
-def is_something_error(error, func, *args, **kwargs):
-    try:
-        func(*args, **kwargs)
-    except error:
-        return True
-    return False
-
-
-def is_type_error(func, *args):
-    try:
-        func(*args)
-    except TypeError:
-        return True
-    return False
+from .utils import is_something_error, is_type_error
 
 
 class TestSpec(unittest.TestCase):
     def test_int(self):
-        def _get_int_spec():
-            class IntSpec:
-                int_field = Checker([INT])
-
-            return IntSpec
+        class IntSpec:
+            int_field = Checker([INT])
 
         ok_data = dict(int_field=3)
-        assert validate_data_spec(ok_data, _get_int_spec())
+        assert validate_data_spec(ok_data, IntSpec)
 
         nok_data = dict(int_field='3')
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_int_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, IntSpec)
 
     def test_float(self):
-        def _get_float_spec():
-            class FloatSpec:
-                float_field = Checker([FLOAT])
-
-            return FloatSpec
+        class FloatSpec:
+            float_field = Checker([FLOAT])
 
         ok_data = dict(float_field=3.0)
-        assert validate_data_spec(ok_data, _get_float_spec())
+        assert validate_data_spec(ok_data, FloatSpec)
 
         nok_data = dict(float_field=3)
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_float_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, FloatSpec)
 
     def test_str(self):
-        def _get_str_spec():
-            class StrSpec:
-                str_field = Checker([STR])
-
-            return StrSpec
+        class StrSpec:
+            str_field = Checker([STR])
 
         ok_data = dict(str_field='3')
-        assert validate_data_spec(ok_data, _get_str_spec())
+        assert validate_data_spec(ok_data, StrSpec)
 
         nok_data = dict(str_field=3)
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_str_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, StrSpec)
 
     def test_none(self):
-        def _get_none_spec():
-            class NoneSpec:
-                none_field = Checker([NONE])
-
-            return NoneSpec
+        class NoneSpec:
+            none_field = Checker([NONE])
 
         ok_data = dict(none_field=None)
-        assert validate_data_spec(ok_data, _get_none_spec())
+        assert validate_data_spec(ok_data, NoneSpec)
 
         nok_data = dict(none_field=3)
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_none_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, NoneSpec)
 
     def test_allow_none(self):
-        def _get_allow_none_spec():
-            class AllowNoneSpec:
-                maybe_none_field = Checker([INT], allow_none=True)
-
-            return AllowNoneSpec
+        class AllowNoneSpec:
+            maybe_none_field = Checker([INT], allow_none=True)
 
         ok_data = dict(maybe_none_field=3)
-        assert validate_data_spec(ok_data, _get_allow_none_spec())
+        assert validate_data_spec(ok_data, AllowNoneSpec)
 
         ok_data = dict(maybe_none_field=None)
-        assert validate_data_spec(ok_data, _get_allow_none_spec())
+        assert validate_data_spec(ok_data, AllowNoneSpec)
 
         nok_data = dict(maybe_none_field='3')
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_allow_none_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, AllowNoneSpec)
 
     def test_bool(self):
-        def _get_bool_spec():
-            class BoolSpec:
-                bool_field = Checker([BOOL])
-
-            return BoolSpec
+        class BoolSpec:
+            bool_field = Checker([BOOL])
 
         ok_data = dict(bool_field=False)
-        assert validate_data_spec(ok_data, _get_bool_spec())
+        assert validate_data_spec(ok_data, BoolSpec)
 
         nok_data = dict(bool_field='True')
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_bool_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, BoolSpec)
 
     def test_self(self):
-        def _get_self_spec():
-            class SelfSpec:
-                next_field = Checker([SPEC], optional=True, extra={SPEC: SELF})
-                children = Checker([LIST_OF], optional=True, extra={LIST_OF: SPEC, SPEC: SELF})
+        class SelfSpec:
+            next_field = Checker([SPEC], optional=True, extra={SPEC: SELF})
+            children = Checker([LIST_OF], optional=True, extra={LIST_OF: SPEC, SPEC: SELF})
 
-            return SelfSpec
-
-        def _get_no_extra_self_spec():
-            class SelfSpec:
-                next_field = Checker([SPEC], optional=True, SPEC=SELF)
-                children = Checker([LIST_OF], optional=True, LIST_OF=SPEC, SPEC=SELF)
-
-            return SelfSpec
+        class NoExtraSelfSpec:
+            next_field = Checker([SPEC], optional=True, SPEC=SELF)
+            children = Checker([LIST_OF], optional=True, LIST_OF=SPEC, SPEC=SELF)
 
         ok_data = dict(
             next_field=dict(
@@ -177,12 +139,12 @@ class TestSpec(unittest.TestCase):
                 ),
             ],
         )
-        assert validate_data_spec(ok_data, _get_self_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_self_spec())
+        assert validate_data_spec(ok_data, SelfSpec)
+        assert validate_data_spec(ok_data, NoExtraSelfSpec)
 
         nok_data = dict(next_field=dict(next_field=0))
-        assert is_something_error(Exception, validate_data_spec, nok_data, _get_self_spec())
-        assert is_something_error(Exception, validate_data_spec, nok_data, _get_no_extra_self_spec())
+        assert is_something_error(Exception, validate_data_spec, nok_data, SelfSpec)
+        assert is_something_error(Exception, validate_data_spec, nok_data, NoExtraSelfSpec)
 
     def test_list(self):
         class ListSpec:
@@ -195,245 +157,199 @@ class TestSpec(unittest.TestCase):
         assert is_something_error(TypeError, validate_data_spec, nok_data, ListSpec)
 
     def test_dict(self):
-        def _get_dict_spec():
-            class DictSpec:
-                dict_field = Checker([DICT])
-
-            return DictSpec
+        class DictSpec:
+            dict_field = Checker([DICT])
 
         ok_data = dict(dict_field=dict(a=2, b=4))
-        assert validate_data_spec(ok_data, _get_dict_spec())
+        assert validate_data_spec(ok_data, DictSpec)
 
         nok_data = dict(dict_field=[1, 2, 3])
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_dict_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, DictSpec)
 
     def test_date_object(self):
-        def _get_date_object_spec():
-            class DateSpec:
-                date_object_field = Checker([DATE_OBJECT])
-
-            return DateSpec
+        class DateObjSpec:
+            date_object_field = Checker([DATE_OBJECT])
 
         ok_data = dict(date_object_field=datetime.date(2023, 2, 9))
-        assert validate_data_spec(ok_data, _get_date_object_spec())
+        assert validate_data_spec(ok_data, DateObjSpec)
 
         nok_data = dict(date_object_field=datetime.datetime(2023, 2, 9, 12, 34))
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_date_object_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, DateObjSpec)
 
     def test_datetime_object(self):
-        def _get_datetime_object_spec():
-            class DatetimeSpec:
-                datetime_object_field = Checker([DATETIME_OBJECT])
-
-            return DatetimeSpec
+        class DatetimeObjSpec:
+            datetime_object_field = Checker([DATETIME_OBJECT])
 
         ok_data = dict(datetime_object_field=datetime.datetime(2023, 2, 9, 12, 34))
-        assert validate_data_spec(ok_data, _get_datetime_object_spec())
+        assert validate_data_spec(ok_data, DatetimeObjSpec)
 
         nok_data = dict(datetime_object_field=datetime.date(2023, 2, 9))
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_datetime_object_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, DatetimeObjSpec)
 
     def test_optional(self):
-        def _get_optional_spec():
-            class OptionalSpec:
-                optional_field = Checker([STR], optional=True)
-
-            return OptionalSpec
+        class OptionalSpec:
+            optional_field = Checker([STR], optional=True)
 
         ok_data = dict(whatever_field='dont_care')
-        assert validate_data_spec(ok_data, _get_optional_spec())
+        assert validate_data_spec(ok_data, OptionalSpec)
 
     def test_amount(self):
-        def _get_amount_spec():
-            class AmountSpec:
-                amount_field = Checker([AMOUNT])
-
-            return AmountSpec
+        class AmountSpec:
+            amount_field = Checker([AMOUNT])
 
         ok_data = dict(amount_field='3.1415')
-        assert validate_data_spec(ok_data, _get_amount_spec())
+        assert validate_data_spec(ok_data, AmountSpec)
 
         ok_data = dict(amount_field=5566)
-        assert validate_data_spec(ok_data, _get_amount_spec())
+        assert validate_data_spec(ok_data, AmountSpec)
 
         nok_data = dict(amount_field='abc')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_amount_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, AmountSpec)
 
     def test_amount_range(self):
-        def _get_amount_range_spec():
-            class AmountRangeSpec:
-                amount_range_field = Checker([AMOUNT_RANGE], extra={AMOUNT_RANGE: dict(min=-2.1, max=3.8)})
+        class AmountRangeSpec:
+            amount_range_field = Checker([AMOUNT_RANGE], extra={AMOUNT_RANGE: dict(min=-2.1, max=3.8)})
 
-            return AmountRangeSpec
-
-        def _get_no_extra_amount_range_spec():
-            class AmountRangeSpec:
-                amount_range_field = Checker([AMOUNT_RANGE], AMOUNT_RANGE=dict(min=-2.1, max=3.8))
-
-            return AmountRangeSpec
+        class NoExtraAmountRangeSpec:
+            amount_range_field = Checker([AMOUNT_RANGE], AMOUNT_RANGE=dict(min=-2.1, max=3.8))
 
         ok_data = dict(
             amount_range_field='3.8',
         )
-        assert validate_data_spec(ok_data, _get_amount_range_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_amount_range_spec())
+        assert validate_data_spec(ok_data, AmountRangeSpec)
+        assert validate_data_spec(ok_data, NoExtraAmountRangeSpec)
 
         ok_data = dict(amount_range_field=-2.1)
-        assert validate_data_spec(ok_data, _get_amount_range_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_amount_range_spec())
+        assert validate_data_spec(ok_data, AmountRangeSpec)
+        assert validate_data_spec(ok_data, NoExtraAmountRangeSpec)
 
         nok_data = dict(amount_range_field='-2.2')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_amount_range_spec())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_amount_range_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, AmountRangeSpec)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraAmountRangeSpec)
 
         nok_data = dict(amount_range_field='3.81')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_amount_range_spec())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_amount_range_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, AmountRangeSpec)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraAmountRangeSpec)
 
     def test_length(self):
-        def _get_length_spec():
-            class LengthSpec:
-                length_field = Checker([LENGTH], extra={LENGTH: dict(min=3, max=5)})
+        class LengthSpec:
+            length_field = Checker([LENGTH], extra={LENGTH: dict(min=3, max=5)})
 
-            return LengthSpec
-
-        def _get_no_extra_length_spec():
-            class LengthSpec:
-                length_field = Checker([LENGTH], LENGTH=dict(min=3, max=5))
-
-            return LengthSpec
+        class NoExtraLengthSpec:
+            length_field = Checker([LENGTH], LENGTH=dict(min=3, max=5))
 
         ok_data = dict(length_field='3.2')
-        assert validate_data_spec(ok_data, _get_length_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_length_spec())
+        assert validate_data_spec(ok_data, LengthSpec)
+        assert validate_data_spec(ok_data, NoExtraLengthSpec)
 
         ok_data = dict(length_field='3.141')
-        assert validate_data_spec(ok_data, _get_length_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_length_spec())
+        assert validate_data_spec(ok_data, LengthSpec)
+        assert validate_data_spec(ok_data, NoExtraLengthSpec)
 
         nok_data = dict(length_field='ah')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_length_spec())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_length_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, LengthSpec)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraLengthSpec)
 
         nok_data = dict(length_field='exceed')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_length_spec())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_length_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, LengthSpec)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraLengthSpec)
 
     def test_decimal_place(self):
-        def _get_decimal_place_spec():
-            class DecimalPlaceSpec:
-                decimal_place_field = Checker([DECIMAL_PLACE], extra={DECIMAL_PLACE: 4})
+        class DecimalPlaceSpec:
+            decimal_place_field = Checker([DECIMAL_PLACE], extra={DECIMAL_PLACE: 4})
 
-            return DecimalPlaceSpec
-
-        def _get_no_extra_decimal_place_spec():
-            class DecimalPlaceSpec:
-                decimal_place_field = Checker([DECIMAL_PLACE], DECIMAL_PLACE=4)
-
-            return DecimalPlaceSpec
+        class NoExtraDecimalPlaceSpec:
+            decimal_place_field = Checker([DECIMAL_PLACE], DECIMAL_PLACE=4)
 
         ok_data = dict(decimal_place_field=3.123)
-        assert validate_data_spec(ok_data, _get_decimal_place_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_decimal_place_spec())
+        assert validate_data_spec(ok_data, DecimalPlaceSpec)
+        assert validate_data_spec(ok_data, NoExtraDecimalPlaceSpec)
 
         ok_data = dict(decimal_place_field=3.1234)
-        assert validate_data_spec(ok_data, _get_decimal_place_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_decimal_place_spec())
+        assert validate_data_spec(ok_data, DecimalPlaceSpec)
+        assert validate_data_spec(ok_data, NoExtraDecimalPlaceSpec)
 
         nok_data = dict(decimal_place_field=3.12345)
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_decimal_place_spec())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_decimal_place_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, DecimalPlaceSpec)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraDecimalPlaceSpec)
 
     def test_date(self):
-        def _get_date_spec():
-            class DateSpec:
-                date_field = Checker([DATE])
-
-            return DateSpec
+        class DateStrSpec:
+            date_field = Checker([DATE])
 
         ok_data = dict(date_field='2000-01-31')
-        assert validate_data_spec(ok_data, _get_date_spec())
+        assert validate_data_spec(ok_data, DateStrSpec)
 
         ok_data = dict(date_field='1-31-2000')
-        assert validate_data_spec(ok_data, _get_date_spec())
+        assert validate_data_spec(ok_data, DateStrSpec)
 
         ok_data = dict(date_field='20200101')
-        assert validate_data_spec(ok_data, _get_date_spec())
+        assert validate_data_spec(ok_data, DateStrSpec)
 
         nok_data = dict(date_field='202011')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_date_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, DateStrSpec)
 
     def test_date_range(self):
-        def _get_date_range_spec():
-            class DateRangeSpec:
-                date_range_field = Checker(
-                    [DATE_RANGE],
-                    extra={DATE_RANGE: dict(min='2000-01-01', max='2010-12-31')},
-                )
+        class DateStrRangeSpec:
+            date_range_field = Checker(
+                [DATE_RANGE],
+                extra={DATE_RANGE: dict(min='2000-01-01', max='2010-12-31')},
+            )
 
-            return DateRangeSpec
-
-        def _get_no_extra_date_range_spec():
-            class DateRangeSpec:
-                date_range_field = Checker(
-                    [DATE_RANGE],
-                    DATE_RANGE=dict(min='2000-01-01', max='2010-12-31'),
-                )
-
-            return DateRangeSpec
+        class NoExtraDateStrRangeSpec:
+            date_range_field = Checker(
+                [DATE_RANGE],
+                DATE_RANGE=dict(min='2000-01-01', max='2010-12-31'),
+            )
 
         ok_data = dict(date_range_field='2000-1-1')
-        assert validate_data_spec(ok_data, _get_date_range_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_date_range_spec())
+        assert validate_data_spec(ok_data, DateStrRangeSpec)
+        assert validate_data_spec(ok_data, NoExtraDateStrRangeSpec)
 
         ok_data = dict(date_range_field='2005-12-31')
-        assert validate_data_spec(ok_data, _get_date_range_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_date_range_spec())
+        assert validate_data_spec(ok_data, DateStrRangeSpec)
+        assert validate_data_spec(ok_data, NoExtraDateStrRangeSpec)
 
         ok_data = dict(date_range_field='2010-12-31')
-        assert validate_data_spec(ok_data, _get_date_range_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_date_range_spec())
+        assert validate_data_spec(ok_data, DateStrRangeSpec)
+        assert validate_data_spec(ok_data, NoExtraDateStrRangeSpec)
 
         nok_data = dict(date_range_field='1999-12-31')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_date_range_spec())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_date_range_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, DateStrRangeSpec)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraDateStrRangeSpec)
 
     def test_nested_spec(self):
-        def _get_spec():
-            class LeafSpec:
-                int_field = Checker([INT])
-                str_field = Checker([STR])
-                bool_field = Checker([BOOL])
+        class LeafSpec:
+            int_field = Checker([INT])
+            str_field = Checker([STR])
+            bool_field = Checker([BOOL])
 
-            class MidLeafSpec:
-                int_field = Checker([INT])
-                str_field = Checker([STR])
-                leaf_field = Checker([SPEC], extra={SPEC: LeafSpec})
+        class MidLeafSpec:
+            int_field = Checker([INT])
+            str_field = Checker([STR])
+            leaf_field = Checker([SPEC], extra={SPEC: LeafSpec})
 
-            class RootSpec:
-                int_field = Checker([INT])
-                mid_leaf_field = Checker([SPEC], extra={SPEC: MidLeafSpec})
-                bool_field = Checker([BOOL])
+        class RootSpec:
+            int_field = Checker([INT])
+            mid_leaf_field = Checker([SPEC], extra={SPEC: MidLeafSpec})
+            bool_field = Checker([BOOL])
 
-            return RootSpec
 
-        def _get_no_extra_spec():
-            class LeafSpec:
-                int_field = Checker([INT])
-                str_field = Checker([STR])
-                bool_field = Checker([BOOL])
+        class NoExtraLeafSpec:
+            int_field = Checker([INT])
+            str_field = Checker([STR])
+            bool_field = Checker([BOOL])
 
-            class MidLeafSpec:
-                int_field = Checker([INT])
-                str_field = Checker([STR])
-                leaf_field = Checker([SPEC], SPEC=LeafSpec)
+        class NoExtraMidLeafSpec:
+            int_field = Checker([INT])
+            str_field = Checker([STR])
+            leaf_field = Checker([SPEC], SPEC=NoExtraLeafSpec)
 
-            class RootSpec:
-                int_field = Checker([INT])
-                mid_leaf_field = Checker([SPEC], SPEC=MidLeafSpec)
-                bool_field = Checker([BOOL])
+        class NoExtraRootSpec:
+            int_field = Checker([INT])
+            mid_leaf_field = Checker([SPEC], SPEC=NoExtraMidLeafSpec)
+            bool_field = Checker([BOOL])
 
-            return RootSpec
 
         ok_data = dict(
             int_field=1,
@@ -448,8 +364,8 @@ class TestSpec(unittest.TestCase):
             ),
             bool_field=False,
         )
-        assert validate_data_spec(ok_data, _get_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_spec())
+        assert validate_data_spec(ok_data, RootSpec)
+        assert validate_data_spec(ok_data, NoExtraRootSpec)
 
         nok_data = dict(
             int_field=1,
@@ -464,8 +380,8 @@ class TestSpec(unittest.TestCase):
             ),
             bool_field=False,
         )
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_spec())
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, RootSpec)
+        assert is_something_error(LookupError, validate_data_spec, nok_data, NoExtraRootSpec)
 
         nok_data = dict(
             int_field=1,
@@ -480,29 +396,19 @@ class TestSpec(unittest.TestCase):
             ),
             bool_field=False,
         )
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_spec())
-        assert is_something_error(LookupError, validate_data_spec, nok_data, _get_no_extra_spec())
+        assert is_something_error(LookupError, validate_data_spec, nok_data, RootSpec)
+        assert is_something_error(LookupError, validate_data_spec, nok_data, NoExtraRootSpec)
 
     def test_list_of(self):
-        def _get_list_of_spec_spec():
-            class ChildSpec:
-                int_field = Checker([INT])
-                bool_field = Checker([BOOL])
+        class ChildSpec:
+            int_field = Checker([INT])
+            bool_field = Checker([BOOL])
 
-            class ParentSpec:
-                list_of_spec_field = Checker([LIST_OF], extra={LIST_OF: SPEC, SPEC: ChildSpec})
+        class ParentSpec:
+            list_of_spec_field = Checker([LIST_OF], extra={LIST_OF: SPEC, SPEC: ChildSpec})
 
-            return ParentSpec
-
-        def _get_no_extra_list_of_spec_spec():
-            class ChildSpec:
-                int_field = Checker([INT])
-                bool_field = Checker([BOOL])
-
-            class ParentSpec:
-                list_of_spec_field = Checker([LIST_OF], LIST_OF=SPEC, SPEC=ChildSpec)
-
-            return ParentSpec
+        class NoExtraParentSpec:
+            list_of_spec_field = Checker([LIST_OF], LIST_OF=SPEC, SPEC=ChildSpec)
 
         ok_data = dict(
             list_of_spec_field=[
@@ -511,8 +417,8 @@ class TestSpec(unittest.TestCase):
                 dict(int_field=3, bool_field=False),
             ]
         )
-        assert validate_data_spec(ok_data, _get_list_of_spec_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_list_of_spec_spec())
+        assert validate_data_spec(ok_data, ParentSpec)
+        assert validate_data_spec(ok_data, NoExtraParentSpec)
 
         nok_data = dict(
             list_of_spec_field=[
@@ -520,8 +426,8 @@ class TestSpec(unittest.TestCase):
                 2,
             ]
         )
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_list_of_spec_spec())
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_no_extra_list_of_spec_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, ParentSpec)
+        assert is_something_error(TypeError, validate_data_spec, nok_data, NoExtraParentSpec)
 
         class ListOfIntSpec:
             list_of_int_field = Checker([LIST_OF], extra={LIST_OF: INT})
@@ -570,44 +476,35 @@ class TestSpec(unittest.TestCase):
         assert validate_data_spec(ok_data, ForeachIntSpec)
 
     def test_one_of(self):
-        def _get_one_of_spec():
-            class OneOfSpec:
-                one_of_spec_field = Checker([ONE_OF], extra={ONE_OF: [1, '2', [3, 4], {'5': 6}]})
+        class OneOfSpec:
+            one_of_spec_field = Checker([ONE_OF], extra={ONE_OF: [1, '2', [3, 4], {'5': 6}]})
 
-            return OneOfSpec
-
-        def _get_no_extra_one_of_spec():
-            class OneOfSpec:
-                one_of_spec_field = Checker([ONE_OF], ONE_OF=[1, '2', [3, 4], {'5': 6}])
-
-            return OneOfSpec
+        class NoExtraOneOfSpec:
+            one_of_spec_field = Checker([ONE_OF], ONE_OF=[1, '2', [3, 4], {'5': 6}])
 
         ok_data = dict(one_of_spec_field=1)
-        assert validate_data_spec(ok_data, _get_one_of_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_one_of_spec())
+        assert validate_data_spec(ok_data, OneOfSpec)
+        assert validate_data_spec(ok_data, NoExtraOneOfSpec)
 
         ok_data = dict(one_of_spec_field='2')
-        assert validate_data_spec(ok_data, _get_one_of_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_one_of_spec())
+        assert validate_data_spec(ok_data, OneOfSpec)
+        assert validate_data_spec(ok_data, NoExtraOneOfSpec)
 
         ok_data = dict(one_of_spec_field=[3, 4])
-        assert validate_data_spec(ok_data, _get_one_of_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_one_of_spec())
+        assert validate_data_spec(ok_data, OneOfSpec)
+        assert validate_data_spec(ok_data, NoExtraOneOfSpec)
 
         ok_data = dict(one_of_spec_field={'5': 6})
-        assert validate_data_spec(ok_data, _get_one_of_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_one_of_spec())
+        assert validate_data_spec(ok_data, OneOfSpec)
+        assert validate_data_spec(ok_data, NoExtraOneOfSpec)
 
         nok_data = dict(one_of_spec_field=6)
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_one_of_spec())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_one_of_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, OneOfSpec)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraOneOfSpec)
 
     def test_json(self):
-        def _get_json_spec():
-            class JsonSpec:
-                json_spec_field = Checker([JSON])
-
-            return JsonSpec
+        class JsonSpec:
+            json_spec_field = Checker([JSON])
 
         for value in chain.from_iterable(
             (
@@ -620,7 +517,7 @@ class TestSpec(unittest.TestCase):
             )
         ):
             ok_data = dict(json_spec_field=value)
-            assert validate_data_spec(ok_data, _get_json_spec()), value
+            assert validate_data_spec(ok_data, JsonSpec), value
 
         for value in chain.from_iterable(
             (
@@ -633,482 +530,386 @@ class TestSpec(unittest.TestCase):
             )
         ):
             nok_data = dict(json_spec_field=value)
-            assert is_something_error(TypeError, validate_data_spec, nok_data, _get_json_spec()), value
+            assert is_something_error(TypeError, validate_data_spec, nok_data, JsonSpec), value
 
     def test_json_bool(self):
-        def _get_json_bool_spec():
-            class JsonBoolSpec:
-                json_bool_spec_field = Checker([JSON_BOOL])
-
-            return JsonBoolSpec
+        class JsonBoolSpec:
+            json_bool_spec_field = Checker([JSON_BOOL])
 
         ok_data = dict(json_bool_spec_field='true')
-        assert validate_data_spec(ok_data, _get_json_bool_spec())
+        assert validate_data_spec(ok_data, JsonBoolSpec)
 
         ok_data = dict(json_bool_spec_field='false')
-        assert validate_data_spec(ok_data, _get_json_bool_spec())
+        assert validate_data_spec(ok_data, JsonBoolSpec)
 
         nok_data = dict(json_bool_spec_field=True)
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_json_bool_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, JsonBoolSpec)
 
         nok_data = dict(json_bool_spec_field='False')
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_json_bool_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, JsonBoolSpec)
 
         nok_data = dict(json_bool_spec_field='FALSE')
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_json_bool_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, JsonBoolSpec)
 
     def test_op_all(self):
-        def _get_all_spec():
-            class AllSpec:
-                all_field = Checker([LENGTH, STR, AMOUNT], extra={LENGTH: dict(min=3, max=5)})
+        class AllSpec:
+            all_field = Checker([LENGTH, STR, AMOUNT], extra={LENGTH: dict(min=3, max=5)})
 
-            return AllSpec
-
-        def _get_no_extra_all_spec():
-            class AllSpec:
-                all_field = Checker([LENGTH, STR, AMOUNT], LENGTH=dict(min=3, max=5))
-
-            return AllSpec
+        class NoExtraAllSpec:
+            all_field = Checker([LENGTH, STR, AMOUNT], LENGTH=dict(min=3, max=5))
 
         ok_data = dict(all_field='1.234')
-        assert validate_data_spec(ok_data, _get_all_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_all_spec())
+        assert validate_data_spec(ok_data, AllSpec)
+        assert validate_data_spec(ok_data, NoExtraAllSpec)
 
         ok_data = dict(all_field='12345')
-        assert validate_data_spec(ok_data, _get_all_spec())
-        assert validate_data_spec(ok_data, _get_no_extra_all_spec())
+        assert validate_data_spec(ok_data, AllSpec)
+        assert validate_data_spec(ok_data, NoExtraAllSpec)
 
         nok_data = dict(all_field='123456')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_all_spec())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_all_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, AllSpec)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraAllSpec)
 
     def test_op_any(self):
-        def _get_any_spec():
-            class AnySpec:
-                any_field = Checker([INT, STR], optional=True, op=CheckerOP.ANY)
-
-            return AnySpec
+        class AnySpec:
+            any_field = Checker([INT, STR], optional=True, op=CheckerOP.ANY)
 
         ok_data = dict(any_field=1)
-        assert validate_data_spec(ok_data, _get_any_spec())
+        assert validate_data_spec(ok_data, AnySpec)
 
         ok_data = dict(any_field='1')
-        assert validate_data_spec(ok_data, _get_any_spec())
+        assert validate_data_spec(ok_data, AnySpec)
 
         ok_data = dict(any_unexist_field=1)
-        assert validate_data_spec(ok_data, _get_any_spec())
+        assert validate_data_spec(ok_data, AnySpec)
 
         nok_data = dict(any_field=True)
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_any_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, AnySpec)
 
     def test_email(self):
-        def _get_email_spec():
-            class EmailSpec:
-                email_field = Checker([EMAIL])
-
-            return EmailSpec
+        class EmailSpec:
+            email_field = Checker([EMAIL])
 
         ok_data = dict(email_field='foo@bar.com')
-        assert validate_data_spec(ok_data, _get_email_spec())
+        assert validate_data_spec(ok_data, EmailSpec)
 
         ok_data = dict(email_field='foo.bar@test.org')
-        assert validate_data_spec(ok_data, _get_email_spec())
+        assert validate_data_spec(ok_data, EmailSpec)
 
         ok_data = dict(email_field='foo+bar@hc.co.uk')
-        assert validate_data_spec(ok_data, _get_email_spec())
+        assert validate_data_spec(ok_data, EmailSpec)
 
         ok_data = dict(email_field='ABC@DEF.COM')
-        assert validate_data_spec(ok_data, _get_email_spec())
+        assert validate_data_spec(ok_data, EmailSpec)
 
         ok_data = dict(email_field='_ab_C@example.com')
-        assert validate_data_spec(ok_data, _get_email_spec())
+        assert validate_data_spec(ok_data, EmailSpec)
 
         ok_data = dict(email_field='-AB-c@example.com')
-        assert validate_data_spec(ok_data, _get_email_spec())
+        assert validate_data_spec(ok_data, EmailSpec)
 
         ok_data = dict(email_field='3aBc@example.com')
-        assert validate_data_spec(ok_data, _get_email_spec())
+        assert validate_data_spec(ok_data, EmailSpec)
 
         nok_data = dict(email_field="example.com")
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_email_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, EmailSpec)
 
         nok_data = dict(email_field="john@doe.")
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_email_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, EmailSpec)
 
         nok_data = dict(email_field="john@.doe")
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_email_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, EmailSpec)
 
         nok_data = dict(email_field="say@hello.world!")
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_email_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, EmailSpec)
 
     def test_regex_validator(self):
         # ^, $
-        def _get_symbol_spec1():
-            class SimpleRegexSpec1:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'^The')})
-
-            return SimpleRegexSpec1
+        class SimpleRegexSpec1:
+            re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'^The')})
 
         # Just test SINGLE ONE regex spec for convenience
-        def _get_no_extra_symbol_spec1():
-            class SimpleRegexSpec1:
-                re_field = Checker([REGEX], REGEX=dict(pattern=r'^The'))
+        class NoExtraSimpleRegexSpec1:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'^The'))
 
-            return SimpleRegexSpec1
+        class SimpleRegexSpec2:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'of the world$'))
 
-        def _get_symbol_spec2():
-            class SimpleRegexSpec2:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'of the world$')})
+        class SimpleRegexSpec3:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'^abc$'))
 
-            return SimpleRegexSpec2
-
-        def _get_symbol_spec3():
-            class SimpleRegexSpec3:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'^abc$')})
-
-            return SimpleRegexSpec3
-
-        def _get_symbol_spec4():
-            class SimpleRegexSpec4:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'notice')})
-
-            return SimpleRegexSpec4
+        class SimpleRegexSpec4:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'notice'))
 
         ok_data = dict(re_field='The')
-        assert validate_data_spec(ok_data, _get_symbol_spec1())
-        assert validate_data_spec(ok_data, _get_no_extra_symbol_spec1())
+        assert validate_data_spec(ok_data, SimpleRegexSpec1)
+        assert validate_data_spec(ok_data, NoExtraSimpleRegexSpec1)
         nok_data = dict(re_field='That cat is cute')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec1())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_symbol_spec1())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec1)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraSimpleRegexSpec1)
         nok_data = dict(re_field='I am the king of dogs')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec1())
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_no_extra_symbol_spec1())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec1)
+        assert is_something_error(ValueError, validate_data_spec, nok_data, NoExtraSimpleRegexSpec1)
 
         ok_data = dict(re_field='of the world')
-        assert validate_data_spec(ok_data, _get_symbol_spec2())
+        assert validate_data_spec(ok_data, SimpleRegexSpec2)
         nok_data = dict(re_field='I am the king of the world.')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec2())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec2)
 
         ok_data = dict(re_field='abc')
-        assert validate_data_spec(ok_data, _get_symbol_spec3())
+        assert validate_data_spec(ok_data, SimpleRegexSpec3)
         nok_data = dict(re_field='adcd')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec3())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec3)
         nok_data = dict(re_field='adc')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec3())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec3)
 
         ok_data = dict(re_field='Did you notice that')
-        assert validate_data_spec(ok_data, _get_symbol_spec4())
+        assert validate_data_spec(ok_data, SimpleRegexSpec4)
         nok_data = dict(re_field='coffee, not iced please')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec4())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec4)
 
         # ?, +, *,
-        def _get_symbol_spec5():
-            class SimpleRegexSpec5:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab*')})
+        class SimpleRegexSpec5:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'ab*'))
 
-            return SimpleRegexSpec5
+        class SimpleRegexSpec6:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'ab+'))
 
-        def _get_symbol_spec6():
-            class SimpleRegexSpec6:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab+')})
+        class SimpleRegexSpec7:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'ab?'))
 
-            return SimpleRegexSpec6
-
-        def _get_symbol_spec7():
-            class SimpleRegexSpec7:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab?')})
-
-            return SimpleRegexSpec7
-
-        def _get_symbol_spec8():
-            class SimpleRegexSpec8:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'a?b+$')})
-
-            return SimpleRegexSpec8
+        class SimpleRegexSpec8:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'a?b+$'))
 
         ok_data = dict(re_field='ac')
-        assert validate_data_spec(ok_data, _get_symbol_spec5())
+        assert validate_data_spec(ok_data, SimpleRegexSpec5)
         ok_data = dict(re_field='ab')
-        assert validate_data_spec(ok_data, _get_symbol_spec5())
+        assert validate_data_spec(ok_data, SimpleRegexSpec5)
         ok_data = dict(re_field='abbc')
-        assert validate_data_spec(ok_data, _get_symbol_spec5())
+        assert validate_data_spec(ok_data, SimpleRegexSpec5)
         nok_data = dict(re_field='b')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec5())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec5)
 
         ok_data = dict(re_field='ab')
-        assert validate_data_spec(ok_data, _get_symbol_spec6())
+        assert validate_data_spec(ok_data, SimpleRegexSpec6)
         ok_data = dict(re_field='abbc')
-        assert validate_data_spec(ok_data, _get_symbol_spec6())
+        assert validate_data_spec(ok_data, SimpleRegexSpec6)
         nok_data = dict(re_field='ac')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec6())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec6)
 
         ok_data = dict(re_field='ac')
-        assert validate_data_spec(ok_data, _get_symbol_spec7())
+        assert validate_data_spec(ok_data, SimpleRegexSpec7)
         ok_data = dict(re_field='ab')
-        assert validate_data_spec(ok_data, _get_symbol_spec7())
+        assert validate_data_spec(ok_data, SimpleRegexSpec7)
         ok_data = dict(re_field='abbc')
-        assert validate_data_spec(ok_data, _get_symbol_spec7())
+        assert validate_data_spec(ok_data, SimpleRegexSpec7)
         nok_data = dict(re_field='bc')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec7())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec7)
 
         ok_data = dict(re_field='ab')
-        assert validate_data_spec(ok_data, _get_symbol_spec8())
+        assert validate_data_spec(ok_data, SimpleRegexSpec8)
         ok_data = dict(re_field='abb')
-        assert validate_data_spec(ok_data, _get_symbol_spec8())
+        assert validate_data_spec(ok_data, SimpleRegexSpec8)
         ok_data = dict(re_field='b')
-        assert validate_data_spec(ok_data, _get_symbol_spec8())
+        assert validate_data_spec(ok_data, SimpleRegexSpec8)
         ok_data = dict(re_field='bb')
-        assert validate_data_spec(ok_data, _get_symbol_spec8())
+        assert validate_data_spec(ok_data, SimpleRegexSpec8)
         nok_data = dict(re_field='aac')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec8())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec8)
         nok_data = dict(re_field='ba')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec8())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec8)
 
         # {}
-        def _get_symbol_spec9():
-            class SimpleRegexSpec9:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab{2}')})
+        class SimpleRegexSpec9:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'ab{2}'))
 
-            return SimpleRegexSpec9
-
-        def _get_symbol_spec10():
-            class SimpleRegexSpec10:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'ab{3,5}')})
-
-            return SimpleRegexSpec10
+        class SimpleRegexSpec10:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'ab{3,5}'))
 
         ok_data = dict(re_field='abb')
-        assert validate_data_spec(ok_data, _get_symbol_spec9())
+        assert validate_data_spec(ok_data, SimpleRegexSpec9)
         ok_data = dict(re_field='abcabbc')
-        assert validate_data_spec(ok_data, _get_symbol_spec9())
+        assert validate_data_spec(ok_data, SimpleRegexSpec9)
         nok_data = dict(re_field='ab')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec9())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec9)
 
         ok_data = dict(re_field='abbb')
-        assert validate_data_spec(ok_data, _get_symbol_spec10())
+        assert validate_data_spec(ok_data, SimpleRegexSpec10)
         ok_data = dict(re_field='abbabbbb')
-        assert validate_data_spec(ok_data, _get_symbol_spec10())
+        assert validate_data_spec(ok_data, SimpleRegexSpec10)
         nok_data = dict(re_field='abbabb')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec10())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec10)
 
         # |, ()
-        def _get_symbol_spec11():
-            class SimpleRegexSpec11:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'hello|world')})
+        class SimpleRegexSpec11:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'hello|world'))
 
-            return SimpleRegexSpec11
+        class SimpleRegexSpec12:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'(a|bc)de'))
 
-        def _get_symbol_spec12():
-            class SimpleRegexSpec12:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'(a|bc)de')})
-
-            return SimpleRegexSpec12
-
-        def _get_symbol_spec13():
-            class SimpleRegexSpec13:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'(a|b)*c')})
-
-            return SimpleRegexSpec13
+        class SimpleRegexSpec13:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'(a|b)*c'))
 
         ok_data = dict(re_field='hello, hi')
-        assert validate_data_spec(ok_data, _get_symbol_spec11())
+        assert validate_data_spec(ok_data, SimpleRegexSpec11)
         ok_data = dict(re_field='new world')
-        assert validate_data_spec(ok_data, _get_symbol_spec11())
+        assert validate_data_spec(ok_data, SimpleRegexSpec11)
         nok_data = dict(re_field='hell, word')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec11())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec11)
 
         ok_data = dict(re_field='ade')
-        assert validate_data_spec(ok_data, _get_symbol_spec12())
+        assert validate_data_spec(ok_data, SimpleRegexSpec12)
         ok_data = dict(re_field='bcde')
-        assert validate_data_spec(ok_data, _get_symbol_spec12())
+        assert validate_data_spec(ok_data, SimpleRegexSpec12)
         nok_data = dict(re_field='adbce')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec12())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec12)
 
         ok_data = dict(re_field='c')
-        assert validate_data_spec(ok_data, _get_symbol_spec13())
+        assert validate_data_spec(ok_data, SimpleRegexSpec13)
         ok_data = dict(re_field='acb')
-        assert validate_data_spec(ok_data, _get_symbol_spec13())
+        assert validate_data_spec(ok_data, SimpleRegexSpec13)
         ok_data = dict(re_field='ebcd')
-        assert validate_data_spec(ok_data, _get_symbol_spec13())
+        assert validate_data_spec(ok_data, SimpleRegexSpec13)
         nok_data = dict(re_field='ab')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec13())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec13)
 
         # ., []
-        def _get_symbol_spec14():
-            class SimpleRegexSpec14:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'a.[0-9]')})
+        class SimpleRegexSpec14:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'a.[0-9]'))
 
-            return SimpleRegexSpec14
+        class SimpleRegexSpec15:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'^.{3}$'))
 
-        def _get_symbol_spec15():
-            class SimpleRegexSpec15:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'^.{3}$')})
+        class SimpleRegexSpec16:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'[a-c]'))
 
-            return SimpleRegexSpec15
+        class SimpleRegexSpec17:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r'[0-9]%'))
 
-        def _get_symbol_spec16():
-            class SimpleRegexSpec16:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'[a-c]')})
-
-            return SimpleRegexSpec16
-
-        def _get_symbol_spec17():
-            class SimpleRegexSpec17:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'[0-9]%')})
-
-            return SimpleRegexSpec17
-
-        def _get_symbol_spec18():
-            class SimpleRegexSpec18:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r',[a-zA-Z0-9]$')})
-
-            return SimpleRegexSpec18
+        class SimpleRegexSpec18:
+            re_field = Checker([REGEX], REGEX=dict(pattern=r',[a-zA-Z0-9]$'))
 
         ok_data = dict(re_field='a33')
-        assert validate_data_spec(ok_data, _get_symbol_spec14())
+        assert validate_data_spec(ok_data, SimpleRegexSpec14)
         ok_data = dict(re_field='a.0')
-        assert validate_data_spec(ok_data, _get_symbol_spec14())
+        assert validate_data_spec(ok_data, SimpleRegexSpec14)
         ok_data = dict(re_field='a@9')
-        assert validate_data_spec(ok_data, _get_symbol_spec14())
+        assert validate_data_spec(ok_data, SimpleRegexSpec14)
         nok_data = dict(re_field='a8')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec14())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec14)
         nok_data = dict(re_field='a.a')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec14())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec14)
 
         ok_data = dict(re_field=',3c')
-        assert validate_data_spec(ok_data, _get_symbol_spec15())
+        assert validate_data_spec(ok_data, SimpleRegexSpec15)
         nok_data = dict(re_field='12')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec15())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec15)
         nok_data = dict(re_field='abcd')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec15())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec15)
 
         ok_data = dict(re_field='12a3c')
-        assert validate_data_spec(ok_data, _get_symbol_spec16())
+        assert validate_data_spec(ok_data, SimpleRegexSpec16)
         ok_data = dict(re_field='ab')
-        assert validate_data_spec(ok_data, _get_symbol_spec16())
+        assert validate_data_spec(ok_data, SimpleRegexSpec16)
         nok_data = dict(re_field='de')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec16())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec16)
 
         ok_data = dict(re_field='18%')
-        assert validate_data_spec(ok_data, _get_symbol_spec17())
+        assert validate_data_spec(ok_data, SimpleRegexSpec17)
         nok_data = dict(re_field='a%')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec17())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec17)
 
         ok_data = dict(re_field=',1')
-        assert validate_data_spec(ok_data, _get_symbol_spec18())
+        assert validate_data_spec(ok_data, SimpleRegexSpec18)
         ok_data = dict(re_field=',G')
-        assert validate_data_spec(ok_data, _get_symbol_spec18())
+        assert validate_data_spec(ok_data, SimpleRegexSpec18)
         nok_data = dict(re_field=',end')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_symbol_spec18())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SimpleRegexSpec18)
 
     def test_regex_match_method_validator(self):
-        def _get_search_spec():
-            class SearchRegexSpec:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'watch out')})
+        class SearchRegexSpec:
+            re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'watch out')})
 
-            return SearchRegexSpec
+        class MatchRegexSpec:
+            re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'watch out', method='match')})
 
-        def _get_match_spec():
-            class MatchRegexSpec:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'watch out', method='match')})
-
-            return MatchRegexSpec
-
-        def _get_fullmatch_spec():
-            class FullmatchRegexSpec:
-                re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'watch out', method='fullmatch')})
-
-            return FullmatchRegexSpec
+        class FullmatchRegexSpec:
+            re_field = Checker([REGEX], extra={REGEX: dict(pattern=r'watch out', method='fullmatch')})
 
         ok_data = dict(re_field='someone tell me to watch out.')
-        assert validate_data_spec(ok_data, _get_search_spec())
+        assert validate_data_spec(ok_data, SearchRegexSpec)
         nok_data = dict(re_field='someone tell me')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_search_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, SearchRegexSpec)
 
         ok_data = dict(re_field='watch out, it is close!')
-        assert validate_data_spec(ok_data, _get_match_spec())
+        assert validate_data_spec(ok_data, MatchRegexSpec)
         nok_data = dict(re_field='someone tell me to watch out.')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_match_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, MatchRegexSpec)
 
         ok_data = dict(re_field='watch out')
-        assert validate_data_spec(ok_data, _get_fullmatch_spec())
+        assert validate_data_spec(ok_data, FullmatchRegexSpec)
         nok_data = dict(re_field='watch out, it is close!')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_fullmatch_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, FullmatchRegexSpec)
 
     def test_uuid(self):
-        def _get_uuid_spec():
-            class UuidSpec:
-                uuid_field = Checker([UUID])
-
-            return UuidSpec
+        class UuidSpec:
+            uuid_field = Checker([UUID])
 
         uuid_inst = uuid.UUID('00000000-0000-0000-0000-000000000000')
         ok_data = dict(uuid_field=uuid_inst)
-        assert validate_data_spec(ok_data, _get_uuid_spec())
+        assert validate_data_spec(ok_data, UuidSpec)
 
         ok_data = dict(uuid_field='92d88ec0-a1f2-439a-b3c0-9e36db8b0b75')
-        assert validate_data_spec(ok_data, _get_uuid_spec())
+        assert validate_data_spec(ok_data, UuidSpec)
 
         ok_data = dict(uuid_field='{4700bb68-09b5-4c4f-a403-773c12ee166e}')
-        assert validate_data_spec(ok_data, _get_uuid_spec())
+        assert validate_data_spec(ok_data, UuidSpec)
 
         ok_data = dict(uuid_field='urn:uuid:a4be2b64-caf3-4a00-a924-7ea848471e6c')
-        assert validate_data_spec(ok_data, _get_uuid_spec())
+        assert validate_data_spec(ok_data, UuidSpec)
 
         nok_data = dict(uuid_field='z78ff51b-a354-4819-b2dd-bfaede3a8be5')
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_uuid_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, UuidSpec)
 
     def test_any_key_exists(self):
-        def _get_any_key_exists_spec():
-            class AnyKeyExistsSpec:
-                test_checker = Checker([ANY_KEY_EXISTS], extra={ANY_KEY_EXISTS: {'key1', 'key2', 'key3'}})
-
-            return AnyKeyExistsSpec
+        class AnyKeyExistsSpec:
+            test_checker = Checker([ANY_KEY_EXISTS], extra={ANY_KEY_EXISTS: {'key1', 'key2', 'key3'}})
 
         ok_data = dict(key1=1)
         with self.assertRaises(NotImplementedError) as ctx:
-            validate_data_spec(ok_data, _get_any_key_exists_spec())
+            validate_data_spec(ok_data, AnyKeyExistsSpec)
         assert type(ctx.exception) == NotImplementedError
 
     def test_key_coexist(self):
-        def _get_no_extra_key_coexist_spec():
-            class KeyCoexistsSpec:
-                key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])
-
-            return KeyCoexistsSpec
+        class KeyCoexistsSpec:
+            key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])
 
         ok_data = dict(key1=1, key2=1)
         with self.assertRaises(NotImplementedError) as ctx:
-            validate_data_spec(ok_data, _get_no_extra_key_coexist_spec())
+            validate_data_spec(ok_data, KeyCoexistsSpec)
         assert type(ctx.exception) == NotImplementedError
 
     def test_not_checker(self):
-        def _get_non_bool_spec():
-            class NonBoolSpec:
-                key = Checker([not_(BOOL)])
+        class NonBoolSpec:
+            key = Checker([not_(BOOL)])
 
-            return NonBoolSpec
-
-        def _get_list_of_non_bool_spec():
-            class ListOfNonBoolSpec:
-                keys = Checker([LIST_OF], extra={LIST_OF: not_(BOOL)})
-
-            return ListOfNonBoolSpec
+        class ListOfNonBoolSpec:
+            keys = Checker([LIST_OF], extra={LIST_OF: not_(BOOL)})
 
         ok_data = dict(key=1)
-        assert validate_data_spec(ok_data, _get_non_bool_spec())
+        assert validate_data_spec(ok_data, NonBoolSpec)
 
         ok_data = dict(key='1')
-        assert validate_data_spec(ok_data, _get_non_bool_spec())
+        assert validate_data_spec(ok_data, NonBoolSpec)
 
         nok_data = dict(key=True)
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_non_bool_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, NonBoolSpec)
 
         ok_data = dict(keys=['1', 2, date(2000, 1, 1)])
-        assert validate_data_spec(ok_data, _get_list_of_non_bool_spec())
+        assert validate_data_spec(ok_data, ListOfNonBoolSpec)
 
         nok_data = dict(keys=['1', True, date(2000, 1, 1)])
-        assert is_something_error(TypeError, validate_data_spec, nok_data, _get_list_of_non_bool_spec())
+        assert is_something_error(TypeError, validate_data_spec, nok_data, ListOfNonBoolSpec)
 
     def test_strict_mode(self):
         @dsv_feature(strict=True)

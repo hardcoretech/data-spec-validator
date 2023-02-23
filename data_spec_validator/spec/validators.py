@@ -1,5 +1,6 @@
 import copy
 import datetime
+import functools
 import json
 import re
 import uuid
@@ -44,18 +45,13 @@ from .defines import (
     ValidateResult,
     get_unknown_field_value,
     get_validator,
+    Checker,
 )
 from .features import get_any_keys_set, is_strict
 from .utils import raise_if
 
 _ALLOW_UNKNOWN = 'ALLOW_UNKNOWN'
 _SPEC_WISE_CHECKS = [COND_EXIST, KEY_COEXISTS, ANY_KEY_EXISTS]
-
-
-def _extract_fields(spec) -> List[str]:
-    raise_if(type(spec) != type, RuntimeError(f'{spec} should be just a class'))
-
-    return list(filter(lambda f: type(f) == str and not (f.startswith('__') and f.endswith('__')), spec.__dict__))
 
 
 def _extract_value(checks: list, data: dict, field: str):
@@ -350,10 +346,20 @@ class SpecValidator(BaseValidator):
     name = SPEC
 
     @staticmethod
+    def _extract_fields(spec) -> List[str]:
+        raise_if(type(spec) != type, RuntimeError(f'{spec} should be just a class'))
+
+        def _pick_checker_field(acc, item):
+            if isinstance(item[1], Checker):
+                acc.append(item[0])
+            return acc
+        return list(functools.reduce(_pick_checker_field, spec.__dict__.items(), []))
+
+    @staticmethod
     def validate(value, extra, data) -> Tuple[bool, List[Tuple[bool, List[ValidateResult]]]]:
         target_spec = extra.get(SpecValidator.name)
 
-        fields = _extract_fields(target_spec)
+        fields = SpecValidator._extract_fields(target_spec)
 
         result = _validate_spec_features(value, fields, target_spec)
         if not result[0]:
