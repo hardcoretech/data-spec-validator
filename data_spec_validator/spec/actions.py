@@ -1,9 +1,9 @@
 from typing import List, Tuple
 
-from .defines import DSVError, ErrorMode, MsgLv, UnknownFieldValue, ValidateResult, get_msg_level
+from .defines import DSVError, ErrorMode, MsgLv, ValidateResult, get_msg_level
 from .features import get_err_mode, repack_multirow
 from .utils import raise_if
-from .validators import SpecValidator
+from .validators import SpecValidator, UnknownFieldValue
 
 
 def _wrap_error_with_field_info(failure) -> Exception:
