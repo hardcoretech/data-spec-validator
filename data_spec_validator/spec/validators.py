@@ -4,11 +4,13 @@ import json
 import re
 import uuid
 from decimal import Decimal
+from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Tuple, Type, Union
 
 import dateutil.parser
 
-from .defines import (
+from .checks import (
+    _TYPE,
     AMOUNT,
     AMOUNT_RANGE,
     BOOL,
@@ -33,22 +35,27 @@ from .defines import (
     NONE,
     ONE_OF,
     REGEX,
-    SELF,
     SPEC,
     STR,
     UUID,
-    BaseValidator,
     Checker,
-    UnknownFieldValue,
-    ValidateResult,
-    get_unknown_field_value,
     get_validator,
 )
+from .defines import SELF, BaseValidator, ValidateResult
 from .features import get_any_keys_set, is_strict
 from .utils import raise_if
 
 _ALLOW_UNKNOWN = 'ALLOW_UNKNOWN'
 _SPEC_WISE_CHECKS = [COND_EXIST]
+
+
+class UnknownFieldValue:
+    message = 'This field cannot be found in this SPEC'
+
+
+@lru_cache(1)
+def get_unknown_field_value() -> UnknownFieldValue:
+    return UnknownFieldValue()
 
 
 def _extract_value(checks: list, data: dict, field: str):
@@ -169,6 +176,17 @@ class DummyValidator(BaseValidator):
     @staticmethod
     def validate(value, extra, data):
         raise NotImplementedError
+
+
+class TypeValidator(BaseValidator):
+    name = _TYPE
+
+    @staticmethod
+    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
+        check_type = extra.get(TypeValidator.name)
+        ok = type(value) is check_type
+        info = '' if ok else TypeError(f'{repr(value)} is not in type: {check_type}')
+        return ok, info
 
 
 class IntValidator(BaseValidator):
@@ -344,8 +362,7 @@ class SpecValidator(BaseValidator):
 
     @staticmethod
     def _extract_fields(spec) -> List[str]:
-        raise_if(type(spec) != type, RuntimeError(f'{spec} should be just a class'))
-
+        raise_if(type(spec) != type, RuntimeError(f'{spec} should be a spec class'))
         return [f_name for f_name, checker in spec.__dict__.items() if isinstance(checker, Checker)]
 
     @staticmethod
@@ -508,7 +525,6 @@ class RegexValidator(BaseValidator):
         error_regex_param = regex_param.copy()
         error_regex_param['method'] = match_method
 
-        match_func = None
         if match_method == 'match':
             match_func = re.match
         elif match_method == 'fullmatch':

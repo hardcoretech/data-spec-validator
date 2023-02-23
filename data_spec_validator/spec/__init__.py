@@ -1,4 +1,5 @@
 from .actions import validate_data_spec
+from .checks import Checker, CheckerOP
 
 # Export generic validator NAME
 from .defines import (
@@ -30,8 +31,7 @@ from .defines import (
     SPEC,
     STR,
     UUID,
-    Checker,
-    CheckerOP,
+    BaseValidator,
     DSVError,
     ErrorMode,
     not_,
