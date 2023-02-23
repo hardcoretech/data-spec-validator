@@ -1,24 +1,12 @@
 import unittest
 
-from data_spec_validator.spec import (
-    BOOL,
-    DICT,
-    DIGIT_STR,
-    FLOAT,
-    INT,
-    NONE,
-    SPEC,
-    STR,
-    Checker,
-    validate_data_spec,
-)
+from data_spec_validator.spec import BOOL, DICT, DIGIT_STR, FLOAT, INT, NONE, SPEC, STR, Checker, validate_data_spec
 
 from .utils import is_something_error
 
 
 class TestNestedSpec(unittest.TestCase):
     def test_nested(self):
-
         class NestedSpec:
             class ChildSpec1:
                 class ChildSpec11:
@@ -30,8 +18,10 @@ class TestNestedSpec(unittest.TestCase):
                 d_1 = Checker([DICT])
                 b_1 = Checker([BOOL])
                 s_1 = Checker([SPEC], SPEC=ChildSpec11)
+
             class ChildSpec2:
                 s_2 = Checker([STR])
+
             class ChildSpec3:
                 n_3 = Checker([NONE])
                 ds_3 = Checker([DIGIT_STR])
@@ -41,7 +31,6 @@ class TestNestedSpec(unittest.TestCase):
             str_f = Checker([STR])
             c2_f = Checker([SPEC], SPEC=ChildSpec2)
             c3_f = Checker([SPEC], SPEC=ChildSpec3)
-
 
         ok_data = dict(
             c1_f=dict(

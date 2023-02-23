@@ -1,6 +1,5 @@
 import copy
 import datetime
-import functools
 import json
 import re
 import uuid
@@ -41,11 +40,11 @@ from .defines import (
     STR,
     UUID,
     BaseValidator,
+    Checker,
     UnknownFieldValue,
     ValidateResult,
     get_unknown_field_value,
     get_validator,
-    Checker,
 )
 from .features import get_any_keys_set, is_strict
 from .utils import raise_if
@@ -349,11 +348,7 @@ class SpecValidator(BaseValidator):
     def _extract_fields(spec) -> List[str]:
         raise_if(type(spec) != type, RuntimeError(f'{spec} should be just a class'))
 
-        return [
-            f_name 
-            for f_name, checker in spec.__dict__.items()
-            if isinstance(checker, Checker)
-        ]
+        return [f_name for f_name, checker in spec.__dict__.items() if isinstance(checker, Checker)]
 
     @staticmethod
     def validate(value, extra, data) -> Tuple[bool, List[Tuple[bool, List[ValidateResult]]]]:

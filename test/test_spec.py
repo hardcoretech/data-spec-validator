@@ -334,7 +334,6 @@ class TestSpec(unittest.TestCase):
             mid_leaf_field = Checker([SPEC], extra={SPEC: MidLeafSpec})
             bool_field = Checker([BOOL])
 
-
         class NoExtraLeafSpec:
             int_field = Checker([INT])
             str_field = Checker([STR])
@@ -349,7 +348,6 @@ class TestSpec(unittest.TestCase):
             int_field = Checker([INT])
             mid_leaf_field = Checker([SPEC], SPEC=NoExtraMidLeafSpec)
             bool_field = Checker([BOOL])
-
 
         ok_data = dict(
             int_field=1,
