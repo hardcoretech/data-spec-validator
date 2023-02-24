@@ -1,4 +1,3 @@
-import warnings
 from abc import ABCMeta, abstractmethod
 from enum import Enum
 from functools import lru_cache, reduce
@@ -33,8 +32,6 @@ LIST_OF = 'list_of'
 ONE_OF = 'one_of'
 FOREACH = 'foreach'
 DUMMY = 'dummy'
-ANY_KEY_EXISTS = 'any_key_exists'
-KEY_COEXISTS = 'key_coexists'
 EMAIL = 'email'
 UUID = 'uuid'
 REGEX = 'regex'
@@ -215,7 +212,6 @@ class Checker:
         optional: bool = False,
         allow_none: bool = False,
         op: CheckerOP = CheckerOP.ALL,
-        extra: Union[Dict, None] = None,
         **kwargs,
     ):
         """
@@ -225,7 +221,6 @@ class Checker:
         allow_none: boolean
                   Set allow_none to True, the field value can be None
         op: CheckerOP
-        extra: None or Dict
         """
         self.checks = checks or []
         self._op = op
@@ -233,26 +228,11 @@ class Checker:
         self._allow_none = allow_none
 
         self._ensure(kwargs)
-
-        check_set = set(checks)
-        if extra:
-            warnings.warn('[DSV] keyword: extra is gonna be deprecated', DeprecationWarning)
-        deprecating_checks = {KEY_COEXISTS, ANY_KEY_EXISTS}
-        for deprecating_check in deprecating_checks.intersection(check_set):
-            if deprecating_check == KEY_COEXISTS:
-                warnings.warn(f'[DSV] Use COND_EXIST instead of {deprecating_check.upper()} ', DeprecationWarning)
-            elif deprecating_check == ANY_KEY_EXISTS:
-                warnings.warn(
-                    f'[DSV] Use @dsv_feature(any_keys_set...) instead of {deprecating_check.upper()}',
-                    DeprecationWarning,
-                )
-
-        self.extra = self._merge_extra_kwargs(extra or {}, kwargs)
+        self.extra = self._build_extra(kwargs)
 
     @staticmethod
-    def _merge_extra_kwargs(deprecated_extra: Dict, check_kwargs: Dict) -> Dict:
-        extra = deprecated_extra.copy()
-
+    def _build_extra(check_kwargs: Dict) -> Dict:
+        extra = {}
         all_keys = set(_get_check_2_validator_map().keys())
         for arg_k, arg_v in check_kwargs.items():
             lower_arg_k = arg_k.lower()
@@ -266,7 +246,7 @@ class Checker:
             raise_if(bool(non_upper), TypeError(f'Keyword must be upper-cased: {non_upper}'))
 
         def __ensure_no_repeated_forbidden(_kwargs: Dict):
-            blacklist = {'optional', 'allow_none', 'op', 'extra'}
+            blacklist = {'optional', 'allow_none', 'op'}
 
             def _check_in_blacklist(acc, key):
                 if key.lower() in blacklist:

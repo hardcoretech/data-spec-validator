@@ -109,8 +109,8 @@ class TestDSV(unittest.TestCase):
         kwargs = {'test_b': 'TEST_B'}
 
         class _ViewSpec:
-            test_a = Checker([ONE_OF], extra={ONE_OF: 'TEST A'})
-            test_b = Checker([ONE_OF], extra={ONE_OF: 'TEST_B'})
+            test_a = Checker([ONE_OF], ONE_OF='TEST A')
+            test_b = Checker([ONE_OF], ONE_OF='TEST_B')
 
         class _View(View):
             @dsv_deco(_ViewSpec)

@@ -11,7 +11,6 @@ import dateutil.parser
 from .defines import (
     AMOUNT,
     AMOUNT_RANGE,
-    ANY_KEY_EXISTS,
     BOOL,
     COND_EXIST,
     DATE,
@@ -28,7 +27,6 @@ from .defines import (
     INT,
     JSON,
     JSON_BOOL,
-    KEY_COEXISTS,
     LENGTH,
     LIST,
     LIST_OF,
@@ -50,7 +48,7 @@ from .features import get_any_keys_set, is_strict
 from .utils import raise_if
 
 _ALLOW_UNKNOWN = 'ALLOW_UNKNOWN'
-_SPEC_WISE_CHECKS = [COND_EXIST, KEY_COEXISTS, ANY_KEY_EXISTS]
+_SPEC_WISE_CHECKS = [COND_EXIST]
 
 
 def _extract_value(checks: list, data: dict, field: str):
@@ -308,7 +306,7 @@ class AmountRangeValidator(BaseValidator):
         amount_range_info = extra.get(AmountRangeValidator.name)
         raise_if(
             type(amount_range_info) != dict or ('min' not in amount_range_info and 'max' not in amount_range_info),
-            RuntimeError(f'Invalid extra configuration: {extra}'),
+            RuntimeError(f'Invalid checker configuration: {extra}'),
         )
 
         lower_bound = amount_range_info.get('min', float('-inf'))
@@ -327,7 +325,7 @@ class LengthValidator(BaseValidator):
         length_info = extra.get(LengthValidator.name)
         raise_if(
             type(length_info) != dict or ('min' not in length_info and 'max' not in length_info),
-            RuntimeError(f'Invalid extra configuration: {extra}'),
+            RuntimeError(f'Invalid checker configuration: {extra}'),
         )
 
         lower_bound, upper_bound = length_info.get('min', 0), length_info.get('max')
@@ -445,14 +443,14 @@ class DateRangeValidator(BaseValidator):
         range_info = extra.get(DateRangeValidator.name)
         raise_if(
             type(range_info) != dict or ('min' not in range_info and 'max' not in range_info),
-            RuntimeError(f'Invalid extra configuration: {extra}'),
+            RuntimeError(f'Invalid checker configuration: {extra}'),
         )
 
         min_date_str = range_info.get('min', '1970-01-01')
         max_date_str = range_info.get('max', '2999-12-31')
         raise_if(
             type(min_date_str) != str or type(max_date_str) != str,
-            RuntimeError(f'Invalid extra configuration(must be str): {extra}'),
+            RuntimeError(f'Invalid checker configuration(must be str): {extra}'),
         )
 
         min_date = dateutil.parser.parse(min_date_str).date()
@@ -470,31 +468,6 @@ class DigitStrValidator(BaseValidator):
     def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
         ok = type(value) == str and value.isdigit()
         info = '' if ok else TypeError(f'{repr(value)} is not a digit str')
-        return ok, info
-
-
-class AnyKeyExistsValidator(BaseValidator):
-    name = ANY_KEY_EXISTS
-
-    @staticmethod
-    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
-        sibling_keys = extra.get(AnyKeyExistsValidator.name, [])
-        ok = any(key in data for key in sibling_keys)
-        info = '' if ok else ValueError(f'missing key in {sibling_keys} .')
-        return ok, info
-
-
-class KeyCoexistsValidator(BaseValidator):
-    name = KEY_COEXISTS
-
-    @staticmethod
-    def validate(value, extra, data) -> Tuple[bool, Union[Exception, str]]:
-        related_keys = extra.get(KeyCoexistsValidator.name, [])
-        related_fields = [data.get(key, get_unknown_field_value()) for key in related_keys]
-        ok = all(
-            not isinstance(related_field, UnknownFieldValue) for related_field in related_fields
-        ) and not isinstance(value, UnknownFieldValue)
-        info = '' if ok else LookupError(f'Some coexisting keys {related_keys} missing.')
         return ok, info
 
 
