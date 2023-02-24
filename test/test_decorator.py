@@ -5,9 +5,10 @@ from unittest.mock import patch
 
 from django.conf import settings
 from parameterized import parameterized
+from rest_framework.request import clone_request, override_method
 
 from data_spec_validator.decorator import dsv, dsv_request_meta
-from data_spec_validator.spec import DIGIT_STR, ONE_OF, STR, Checker
+from data_spec_validator.spec import DIGIT_STR, LIST_OF, ONE_OF, STR, Checker, dsv_feature
 
 settings.configure()
 
@@ -23,9 +24,12 @@ except Exception:
     pass
 
 
-def _make_request(cls, path='/', method='GET', user=None, headers=None, data=None):
+def _make_request(cls, path='/', method='GET', user=None, headers=None, data=None, qs=None):
     assert cls in [WSGIRequest, Request]
-    req = WSGIRequest({'REQUEST_METHOD': method, 'PATH_INFO': path, 'wsgi.input': StringIO()})
+    kwargs = {'REQUEST_METHOD': method, 'PATH_INFO': path, 'wsgi.input': StringIO()}
+    if qs:
+        kwargs.update({'QUERY_STRING': qs})
+    req = WSGIRequest(kwargs)
 
     req.user = user
 
@@ -45,7 +49,9 @@ def _make_request(cls, path='/', method='GET', user=None, headers=None, data=Non
             )
             req.POST = data
 
-    return cls(req, parsers=[FormParser]) if cls == Request else req
+    if cls == Request:
+        return clone_request(cls(req, parsers=[FormParser]), method)
+    return req
 
 
 def _make_django_view_params(req, kwargs=None):
@@ -119,6 +125,32 @@ class TestDSV(unittest.TestCase):
 
         view = _View(request=fake_request)
         view.decorated_func(fake_request, **kwargs)
+
+    @parameterized.expand(itertools.product([Request], ['PUT', 'PATCH', 'DELETE']))
+    def test_query_params_with_data(self, cls, method):
+        # arrange
+        qs = 'q_a=3&q_b=true'
+        payload = {'test_a': 'TEST A'}
+
+        fake_request = _make_request(cls, method='POST', data=payload, qs=qs)
+
+        kwargs = {'test_b': 'TEST_B'}
+
+        @dsv_feature(strict=True)
+        class _ViewSpec:
+            q_a = Checker([LIST_OF], LIST_OF=STR)
+            q_b = Checker([LIST_OF], LIST_OF=STR)
+            test_a = Checker([ONE_OF], ONE_OF='TEST A')
+            test_b = Checker([ONE_OF], ONE_OF='TEST_B')
+
+        class _View(View):
+            @dsv(_ViewSpec)
+            def decorated_func(self, request, *_args, **_kwargs):
+                pass
+
+        view = _View(request=fake_request)
+        with override_method(view, fake_request, method) as request:
+            view.decorated_func(request, **kwargs)
 
     def test_req_list_data_with_no_multirow_set(self):
         # arrange
