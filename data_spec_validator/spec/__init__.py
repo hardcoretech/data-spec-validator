@@ -4,7 +4,6 @@ from .actions import validate_data_spec
 from .defines import (
     AMOUNT,
     AMOUNT_RANGE,
-    ANY_KEY_EXISTS,
     BOOL,
     COND_EXIST,
     DATE,
@@ -21,7 +20,6 @@ from .defines import (
     INT,
     JSON,
     JSON_BOOL,
-    KEY_COEXISTS,
     LENGTH,
     LIST,
     LIST_OF,
