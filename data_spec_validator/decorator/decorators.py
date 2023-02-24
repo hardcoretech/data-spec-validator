@@ -57,11 +57,20 @@ def _extract_request_param_data(req, **kwargs):
         RuntimeError(f'Unsupported req type, {type(req)}'),
     )
 
+    def _collect_data(method, req_qp, req_data) -> Dict:
+        if method == 'GET':
+            return req_qp
+        else:
+            if req_qp and issubclass(type(req_qp), dict) and type(req_data) is not list:
+                return {**req_qp, **req_data}
+            # TODO: Don't care about the query_params if it's not a dict or the payload is in list.
+            return req_data
+
     if is_wsgi_request:
         raise_if(req.method not in ['GET', 'POST'], RuntimeError(f'Disallowed method {req.method}'))
-        data = req.GET if req.method == 'GET' else req.POST
+        data = _collect_data(req.method, req.GET, req.POST)
     else:
-        data = req.query_params if req.method == 'GET' else req.data
+        data = _collect_data(req.method, req.query_params, req.data)
 
     return _combine_named_params(data, **kwargs)
 
