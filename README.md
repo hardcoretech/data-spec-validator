@@ -89,37 +89,37 @@ validate_data_spec(multirow_data, SingleSpec, multirow=True) # return True
 
 
 ---
-## Supported checks & sample usages (see `test_spec.py` for more cases)
+## Supported checks & sample usages (see `test_spec.py`/`test_class_type_spec.py` for more cases)
 
 ### INT
-`int_field = Checker([INT])`
+`int_field = Checker([INT])` or `Checker[int]`
 
 ### FLOAT
-`float_field = Checker([FLOAT])`
+`float_field = Checker([FLOAT])` or `Checker([float])`
 
 ### STR
-`str_field = Checker([STR])`
+`str_field = Checker([STR])` or `Checker([str])`
 
 ### DIGIT_STR
 `digi_str_field = Checker([DIGIT_STR])`
 
 ### BOOL
-`bool_field = Checker([BOOL])`
+`bool_field = Checker([BOOL])` or `Checker([bool])`
 
 ### DICT
-`dict_field = Checker([DICT])`
+`dict_field = Checker([DICT])` or `Checker([dict])`
 
 ### LIST
-`list_field = Checker([LIST])`
+`list_field = Checker([LIST])` or `Checker([list])`
 
 ### DATE_OBJECT
-`date_obj_field = Checker([DATE_OBJECT])`
+`date_obj_field = Checker([DATE_OBJECT])` or `Checker([datetime.date])`
 
 ### DATETIME_OBJECT
-`datetime_obj_field = Checker([DATETIME_OBJECT])`
+`datetime_obj_field = Checker([DATETIME_OBJECT])` or `Checker([datetime.datetime])`
 
 ### NONE
-`none_field = Checker([NONE])`
+`none_field = Checker([NONE])` or `Checker([type(None)])`
 
 ### JSON
 `json_field = Checker([JSON])`
@@ -156,20 +156,11 @@ validate_data_spec(multirow_data, SingleSpec, multirow=True) # return True
 ### DATE_RANGE
 `date_range_field = Checker([DATE_RANGE], DATE_RANGE=dict(min='2000-01-01', max='2010-12-31'))`
 
-### ~~ANY_KEY_EXISTS~~ (deprecated)
-#### _Use @dsv_feature(any_keys_set={...}) instead, see below_
-
-~~`any_key_checker = Checker([ANY_KEY_EXISTS], ANY_KEY_EXISTS={'key1', 'key2', 'key3'})`~~
-
-### ~~KEY_COEXISTS~~ (deprecated)
-#### _Use COND_EXIST instead, see below_
-~~`key1 = Checker([KEY_COEXISTS], KEY_COEXISTS=['key2'])`~~
-
 ### EMAIL
 `email_field = Checker([EMAIL])`
 
 ### UUID
-`uuid_field = Checker([UUID])`
+`uuid_field = Checker([UUID])` or `Checker([uuid.UUID])`
 
 ### REGEX
 `re_field = Checker([REGEX], REGEX=dict(pattern=r'^The'))`
@@ -186,6 +177,14 @@ Practically, `optional=True` will be configured in the most use cases, FMI, see 
 `b = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITH=['a']))`
 
 `c = Checker([COND_EXIST], optional=True, COND_EXIST=dict(WITHOUT=['a']))`
+
+### Self-defined class type
+```
+class SomeClass:
+    pass
+
+a = Checker([SomeClass])
+```
 
 ---
 
@@ -342,5 +341,5 @@ A DSVError is raised with 3 errors in args.
 ---
 ## Test
 ```bash
-python -m unittest test.test_spec
+python -m unittest test/*.*
 ```
