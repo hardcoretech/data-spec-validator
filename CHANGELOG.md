@@ -1,6 +1,17 @@
 Changelog
 =========
 
+3.0.0
+-----
+
+Changes:
+
+- [feature] Support class-based check
+- [feature] Support nested spec class
+- [feature] Support combining request query parameters with payload for POST/PUT/DELETE Request
+- Checker keyword "extra" is removed.
+
+
 2.1.1
 -----
 
