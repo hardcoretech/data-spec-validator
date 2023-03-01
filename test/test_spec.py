@@ -1285,17 +1285,14 @@ class TestCustomSpec(unittest.TestCase):
 
         custom_spec.register(dict(gt_check=GreaterThanValidator()))
 
-        def _get_gt_10_spec():
-            class GreaterThanSpec:
-                key = Checker([gt_check], GT_CHECK=10)
-
-            return GreaterThanSpec
+        class GreaterThanSpec:
+            key = Checker([gt_check], GT_CHECK=10)
 
         ok_data = dict(key=11)
-        assert validate_data_spec(ok_data, _get_gt_10_spec())
+        assert validate_data_spec(ok_data, GreaterThanSpec)
 
         nok_data = dict(key=10)
-        assert is_something_error(ValueError, validate_data_spec, nok_data, _get_gt_10_spec())
+        assert is_something_error(ValueError, validate_data_spec, nok_data, GreaterThanSpec)
 
 
 class TestCheckKeyword(unittest.TestCase):
