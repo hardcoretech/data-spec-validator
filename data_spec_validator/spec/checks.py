@@ -3,7 +3,7 @@ import functools
 from enum import Enum
 from functools import lru_cache, reduce
 from inspect import isclass
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from .defines import (
     AMOUNT,
@@ -162,8 +162,7 @@ class Checker:
                   Set allow_none to True, the field value can be None
         op: CheckerOP
         """
-        class_check_type = self._ensure_class_checks(raw_checks)
-        self.checks = self._sanitize_checks(raw_checks) or []
+        self.checks, class_check_type = self._sanitize_checks(raw_checks)
 
         self._op = op
         self._optional = optional
@@ -173,22 +172,19 @@ class Checker:
         self.extra = self._build_extra(class_check_type, kwargs)
 
     @staticmethod
-    def _ensure_class_checks(raw_checks: List[str]) -> Optional[Type[Any]]:
+    def _sanitize_checks(raw_checks: List[RAW_CHECK_TYPE]) -> Tuple[List[str], Optional[Type[Any]]]:
         class_type_check = None
-        for rc in raw_checks:
-            if isclass(rc):
-                raise_if(class_type_check is not None, RuntimeError('Multiple class checks are not supported'))
-                class_type_check = rc
 
-        return class_type_check
-
-    @staticmethod
-    def _sanitize_checks(raw_checks: List[RAW_CHECK_TYPE]) -> List[str]:
         def _is_checkable(elem: Any) -> bool:
             return isclass(elem) or type(elem) is str
 
         def _purify_check(rc: RAW_CHECK_TYPE) -> Union[str, Type[Any]]:
-            return _TYPE if isclass(rc) else rc
+            nonlocal class_type_check
+            if isclass(rc):
+                raise_if(not _is_checkable(rc), TypeError(f'A qualified CHECK is required, but got {rc}'))
+                class_type_check = rc
+                return _TYPE
+            return rc
 
         def _convert_class_check(acc: List, raw_check: RAW_CHECK_TYPE) -> List[str]:
             raise_if(not _is_checkable(raw_check), TypeError(f'A qualified CHECK is required, but got {raw_check}'))
@@ -196,11 +192,11 @@ class Checker:
             return acc
 
         ensured = functools.reduce(_convert_class_check, raw_checks, [])
-        return ensured
+        return ensured, class_type_check
 
     @staticmethod
     def _build_extra(class_type_check: Optional[Type[Any]], check_kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        temp = dict(_type_=class_type_check) if class_type_check else {}
+        temp = {_TYPE: class_type_check} if class_type_check else {}
         all_keys = set(_get_check_2_validator_map().keys())
 
         for arg_k, arg_v in check_kwargs.items():
