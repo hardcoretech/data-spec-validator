@@ -1,6 +1,14 @@
 Changelog
 =========
 
+3.0.1
+-----
+
+Changes:
+
+- [fix] Cherry-pick `eac8af90e0313fd312edba1e7f18b3f537bc80ce` for features (combining query_params in POST/PUT/DELETE request)
+
+
 3.0.0
 -----
 
