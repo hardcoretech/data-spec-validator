@@ -1,9 +1,11 @@
 import itertools
 import unittest
 from io import StringIO
+from unittest import mock
 from unittest.mock import patch
 
 from django.conf import settings
+from django.http import HttpResponse
 from parameterized import parameterized
 from rest_framework.request import clone_request, override_method
 
@@ -209,6 +211,31 @@ class TestDSV(unittest.TestCase):
         fake_args = ['1', '2', 3]
         with self.assertRaises(Exception):
             non_view.decorated_func(fake_args, field_a='1')
+
+
+class TestDSVWithoutDRF(unittest.TestCase):
+    def test_decorated_func_returns_error_response(self):
+        with mock.patch('data_spec_validator.decorator.decorators._enabled_drf', return_value=False):
+
+            class _ViewSpec:
+                named_arg = Checker([DIGIT_STR])
+
+            class _View(View):
+                @dsv(_ViewSpec)
+                def decorated_func(self, request, named_arg):
+                    return HttpResponse(status=200)
+
+            factory = RequestFactory()
+            req = factory.request()
+            view = _View()
+
+            # action
+            resp_valid = view.decorated_func(req, named_arg='1')
+            resp_invalid = view.decorated_func(req, named_arg='')
+
+            # assert
+            self.assertEqual(resp_valid.status_code, 200)
+            self.assertEqual(resp_invalid.status_code, 400)
 
 
 if __name__ == '__main__':
