@@ -1,6 +1,14 @@
 Changelog
 =========
 
+3.1.0
+-----
+
+Changes:
+
+- [feature] `dsv` decorator can support only Django Environment
+
+
 3.0.1
 -----
 

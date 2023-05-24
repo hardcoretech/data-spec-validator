@@ -98,7 +98,6 @@ def _extract_request_param_data(req, **kwargs):
             return req_data
 
     if is_wsgi_request:
-        raise_if(req.method not in ['GET', 'POST'], RuntimeError(f'Disallowed method {req.method}'))
         data = _collect_data(req.method, req.GET, req.POST)
     else:
         data = _collect_data(req.method, req.query_params, req.data)
