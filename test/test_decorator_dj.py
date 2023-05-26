@@ -113,12 +113,12 @@ class TestDSVDJ(unittest.TestCase):
     @parameterized.expand(['PUT', 'PATCH', 'DELETE'])
     def test_query_params_with_data(self, method):
         # arrange
-        qs = 'q_a=3&q_b=true'
-        payload = {'test_a': 'TEST A'}
+        qs = 'q_a=3&q_b=true&d.o.t=dot&array[]=a1&array[]=a2&array[]=a3'
+        payload = {'test_a': 'TEST A', 'test_f[]': [1, 2, 3]}
 
         fake_request = make_request(WSGIRequest, method=method, data=payload, qs=qs)
 
-        kwargs = {'test_b': 'TEST_B'}
+        kwargs = {'test_b': 'TEST_B', 'test_c.d.e': 'TEST C.D.E'}
 
         @dsv_feature(strict=True)
         class _ViewSpec:
@@ -126,14 +126,18 @@ class TestDSVDJ(unittest.TestCase):
             q_b = Checker([LIST_OF], LIST_OF=STR)
             test_a = Checker([ONE_OF], ONE_OF='TEST A')
             test_b = Checker([ONE_OF], ONE_OF='TEST_B')
+            test_c_d_e = Checker([ONE_OF], ONE_OF='TEST C.D.E', alias='test_c.d.e')
+            test_f_array = Checker([LIST_OF], LIST_OF=int, alias='test_f[]')
+            d_o_t = Checker([LIST_OF], LIST_OF=str, alias='d.o.t')
+            array = Checker([LIST_OF], LIST_OF=str, alias='array[]')
 
         class _View(View):
             @dsv(_ViewSpec)
             def decorated_func(self, req, *_args, **_kwargs):
-                pass
+                return True
 
         view = _View(request=fake_request)
-        view.decorated_func(fake_request, **kwargs)
+        assert view.decorated_func(fake_request, **kwargs)
 
     def test_req_list_data_with_no_multirow_set(self):
         # arrange
