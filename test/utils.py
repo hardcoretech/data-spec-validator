@@ -19,7 +19,7 @@ def is_type_error(func, *args):
 
 def is_django_installed():
     try:
-        pass
+        import django  # noqa
     except ImportError:
         return False
     return True
@@ -27,7 +27,7 @@ def is_django_installed():
 
 def is_drf_installed():
     try:
-        pass
+        import rest_framework  # noqa
     except ImportError:
         return False
     return True
@@ -51,7 +51,7 @@ def make_request(cls, path='/', method='GET', user=None, headers=None, data=None
     if data:
         if method == 'GET':
             setattr(req, 'GET', data)
-        elif method == 'POST':
+        elif method in ['POST', 'PUT', 'PATCH', 'DELETE']:
             req.read()  # trigger RawPostDataException and force DRF to load data from req.POST
             req.META.update(
                 {

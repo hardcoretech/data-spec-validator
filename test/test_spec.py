@@ -1232,6 +1232,24 @@ class TestSpec(unittest.TestCase):
         assert is_something_error(LookupError, validate_data_spec, dict(d=1), _CondExistOtherFailAOBCSpec)
         # ==========================
 
+    def test_alias(self):
+        class AliasSpec:
+            dot_field = Checker([int], alias='dot.field')
+            array_field = Checker([LIST_OF], LIST_OF=str, alias='array_field[]')
+
+        ok_data = {
+            'dot.field': 3,
+            'array_field[]': ['a', 'b'],
+        }
+
+        assert validate_data_spec(ok_data, AliasSpec)
+
+        nok_data = {
+            'dot_field': 3,
+            'array_field': ['a', 'b'],
+        }
+        assert is_something_error(LookupError, validate_data_spec, nok_data, AliasSpec)
+
 
 class TestCustomSpec(unittest.TestCase):
     def test_incorrect_validator_class(self):

@@ -3,9 +3,10 @@ import datetime
 import json
 import re
 import uuid
+from dataclasses import dataclass
 from decimal import Decimal
 from functools import lru_cache
-from typing import Any, Dict, Iterable, List, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import dateutil.parser
 
@@ -53,19 +54,25 @@ class UnknownFieldValue:
     message = 'This field cannot be found in this SPEC'
 
 
+@dataclass(frozen=True)
+class FieldKey:
+    spec_field: str
+    data_field: Optional[str] = None
+
+
 @lru_cache(1)
 def get_unknown_field_value() -> UnknownFieldValue:
     return UnknownFieldValue()
 
 
-def _extract_value(checks: list, data: dict, field: str):
+def _extract_value(checks: list, data: dict, field_key: FieldKey):
     if LIST_OF in checks and hasattr(data, 'getlist'):
         # For QueryDict, all query values are put into list for the same key.
         # It should be client side's (Spec maker) responsibility to indicate that
         # whether the field is a list or not.
-        value = data.getlist(field, get_unknown_field_value())
+        value = data.getlist(field_key.data_field, get_unknown_field_value())
     else:
-        value = data.get(field, get_unknown_field_value())
+        value = data.get(field_key.data_field, get_unknown_field_value())
     return value
 
 
@@ -91,14 +98,14 @@ def _pass_unknown(_extra: Dict, value: Any) -> bool:
     return value == get_unknown_field_value() and _ALLOW_UNKNOWN in _extra
 
 
-def _validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
-    checker = getattr(spec, field)
+def _validate_field(data, field_key: FieldKey, spec) -> Tuple[bool, List[ValidateResult]]:
+    checker = getattr(spec, field_key.spec_field)
 
     checks = checker.checks
     allow_optional = checker.allow_optional
     allow_none = checker.allow_none
 
-    value = _extract_value(checks, data, field)
+    value = _extract_value(checks, data, field_key)
     extra = _makeup_internals_to_extra(spec, checks, checker.extra, allow_optional)
 
     results = []
@@ -126,7 +133,7 @@ def _validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
             except Exception as e:
                 # For any unwell-handled case, go this way for now.
                 ok, error = False, RuntimeError(f'{repr(e)}')
-            _acc_results.append((ok, ValidateResult(spec, field, _value, _check, error)))
+            _acc_results.append((ok, ValidateResult(spec, field_key.data_field, _value, _check, error)))
 
         spec_wise_checks = set(filter(lambda c: c in _SPEC_WISE_CHECKS, checks))
         field_wise_checks = set(checks) - spec_wise_checks
@@ -146,9 +153,9 @@ def _validate_field(data, field, spec) -> Tuple[bool, List[ValidateResult]]:
     return True, []
 
 
-def _validate_spec_features(data, fields, spec) -> Tuple[bool, List[ValidateResult]]:
+def _validate_spec_features(data, data_fields, spec) -> Tuple[bool, List[ValidateResult]]:
     if is_strict(spec):
-        unexpected = set(data.keys()) - set(fields)
+        unexpected = set(data.keys()) - set(data_fields)
         if unexpected:
             error = ValueError(f'Unexpected field keys({unexpected}) found in strict mode spec')
             return False, [ValidateResult(spec, str(unexpected), data, 'strict', error)]
@@ -165,8 +172,8 @@ def _validate_spec_features(data, fields, spec) -> Tuple[bool, List[ValidateResu
     return True, [ValidateResult()]
 
 
-def _validate_spec_fields(data, fields, spec) -> List[Tuple[bool, List[ValidateResult]]]:
-    rs = [_validate_field(data, f, spec) for f in fields]
+def _validate_spec_fields(data, field_keys: List[FieldKey], spec) -> List[Tuple[bool, List[ValidateResult]]]:
+    rs = [_validate_field(data, fk, spec) for fk in field_keys]
     return rs
 
 
@@ -361,21 +368,28 @@ class SpecValidator(BaseValidator):
     name = SPEC
 
     @staticmethod
-    def _extract_fields(spec) -> List[str]:
+    def _extract_field_keys(spec) -> List[FieldKey]:
         raise_if(type(spec) != type, RuntimeError(f'{spec} should be a spec class'))
-        return [f_name for f_name, checker in spec.__dict__.items() if isinstance(checker, Checker)]
+
+        fields = []
+        for f_name, checker in spec.__dict__.items():
+            if isinstance(checker, Checker):
+                key = FieldKey(spec_field=f_name, data_field=checker.alias if checker.alias else f_name)
+                fields.append(key)
+
+        return fields
 
     @staticmethod
     def validate(value, extra, data) -> Tuple[bool, List[Tuple[bool, List[ValidateResult]]]]:
         target_spec = extra.get(SpecValidator.name)
 
-        fields = SpecValidator._extract_fields(target_spec)
+        field_keys = SpecValidator._extract_field_keys(target_spec)
 
-        result = _validate_spec_features(value, fields, target_spec)
+        result = _validate_spec_features(value, [fk.data_field for fk in field_keys], target_spec)
         if not result[0]:
             return False, [result]
 
-        results = _validate_spec_fields(value, fields, target_spec)
+        results = _validate_spec_fields(value, field_keys, target_spec)
         failures = [r for r in results if not r[0]]
 
         ok = len(failures) == 0

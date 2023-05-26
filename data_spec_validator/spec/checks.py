@@ -152,6 +152,7 @@ class Checker:
         optional: bool = False,
         allow_none: bool = False,
         op: CheckerOP = CheckerOP.ALL,
+        alias: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -161,12 +162,16 @@ class Checker:
         allow_none: boolean
                   Set allow_none to True, the field value can be None
         op: CheckerOP
+        alias: str or None
+               A string that represents the field name which will be used when extracting values from data payload
+        kwargs: dict
         """
         self.checks, class_check_type = self._sanitize_checks(raw_checks)
 
         self._op = op
         self._optional = optional
         self._allow_none = allow_none
+        self._alias = alias
 
         self._ensure(kwargs)
         self.extra = self._build_extra(class_check_type, kwargs)
@@ -251,3 +256,7 @@ class Checker:
     @property
     def is_op_all(self) -> bool:
         return self._op == CheckerOP.ALL
+
+    @property
+    def alias(self) -> str:
+        return self._alias
