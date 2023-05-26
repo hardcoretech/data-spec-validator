@@ -43,12 +43,13 @@ pip install data-spec-validator[decorator]  # Django Rest Framework
 ## Quick Example
 * Do `validate_data_spec` directly wherever you like
 ```python
-from data_spec_validator.spec import INT, DIGIT_STR, ONE_OF, Checker, CheckerOP, validate_data_spec
+from data_spec_validator.spec import INT, DIGIT_STR, ONE_OF, LIST_OF, Checker, CheckerOP, validate_data_spec
 
 class SomeSpec:
     field_a = Checker([INT])
     field_b = Checker([DIGIT_STR], optional=True)
     field_c = Checker([DIGIT_STR, INT], op=CheckerOP.ANY)
+    filed_d_array = Checker([LIST_OF], LIST_OF=int, alias='field_d[]', optional=True)
 
 some_data = dict(field_a=4, field_b='3', field_c=1, field_dont_care=[5,6])
 validate_data_spec(some_data, SomeSpec) # return True
@@ -56,7 +57,11 @@ validate_data_spec(some_data, SomeSpec) # return True
 some_data = dict(field_a=4, field_c='1')
 validate_data_spec(some_data, SomeSpec) # return True
 
-some_data = dict(field_a=4, field_c=1)
+some_data = {
+    'field_a': 4,
+    'field_c': 1,
+    'field_d[]': [5, 6],
+}
 validate_data_spec(some_data, SomeSpec) # return True
 
 some_data = dict(field_a='4', field_c='1')

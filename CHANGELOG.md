@@ -1,6 +1,16 @@
 Changelog
 =========
 
+3.2.0
+-----
+
+Changes:
+
+- [feature] `dsv` decorator support Django ASGIRequest class
+- [feature] Support validating request data with non-python variable naming convention keys by the `alias' keyword in `Checker`
+
+  i.e. `/some/endpoint?a.b=3&c.d=ok&array[]=1&array[]=2&array[]=3`
+
 3.1.0
 -----
 
