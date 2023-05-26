@@ -4,6 +4,7 @@ from typing import Dict, List, Union
 from data_spec_validator.spec import DSVError, raise_if, validate_data_spec
 
 try:
+    import django
     from django.core.handlers.wsgi import WSGIRequest
     from django.http import HttpResponseBadRequest, HttpResponseForbidden, QueryDict
     from django.views.generic.base import View
@@ -18,6 +19,15 @@ try:
     _enabled_drf = True
 except ModuleNotFoundError:
     print('[DSV][INFO] decorator: using "dsv" without djangorestframework')
+
+# try importing ASGIRequest (released since Django 3.0)
+if django.__version__ >= '3':
+    try:
+        from django.core.handlers.asgi import ASGIRequest
+
+        _has_support_asgi_request = True
+    except ModuleNotFoundError:
+        _has_support_asgi_request = False
 
 
 class ValidationError(Exception):
@@ -39,12 +49,18 @@ def _is_wsgi_request(obj):
     return isinstance(obj, WSGIRequest)
 
 
+def _is_asgi_request(obj):
+    if not _has_support_asgi_request:
+        return False
+    return isinstance(obj, ASGIRequest)
+
+
 def _is_drf_request(obj):
     return _enabled_drf and isinstance(obj, Request)
 
 
 def _is_request(obj):
-    return _is_wsgi_request(obj) or _is_drf_request(obj)
+    return _is_wsgi_request(obj) or _is_asgi_request(obj) or _is_drf_request(obj)
 
 
 def _is_view(obj):
@@ -74,7 +90,7 @@ def _combine_named_params(data, **kwargs):
 
 def _extract_request_meta(req, **kwargs):
     raise_if(
-        not _is_wsgi_request(req) and not _is_drf_request(req),
+        not _is_wsgi_request(req) and not _is_asgi_request(req) and not _is_drf_request(req),
         RuntimeError(f'Unsupported req type, {type(req)}'),
     )
     return _combine_named_params(req.META, **kwargs)
@@ -82,9 +98,10 @@ def _extract_request_meta(req, **kwargs):
 
 def _extract_request_param_data(req, **kwargs):
     is_wsgi_request = _is_wsgi_request(req)
+    is_asgi_request = _is_asgi_request(req)
     is_request = _is_drf_request(req)
     raise_if(
-        not is_wsgi_request and not is_request,
+        not is_wsgi_request and not is_asgi_request and not is_request,
         RuntimeError(f'Unsupported req type, {type(req)}'),
     )
 
@@ -97,7 +114,7 @@ def _extract_request_param_data(req, **kwargs):
             # TODO: Don't care about the query_params if it's not a dict or the payload is in list.
             return req_data
 
-    if is_wsgi_request:
+    if is_wsgi_request or is_asgi_request:
         data = _collect_data(req.method, req.GET, req.POST)
     else:
         data = _collect_data(req.method, req.query_params, req.data)
