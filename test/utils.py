@@ -35,13 +35,20 @@ def is_drf_installed():
 
 def make_request(cls, path='/', method='GET', user=None, headers=None, data=None, qs=None):
     assert is_django_installed()
-    kwargs = {'REQUEST_METHOD': method, 'PATH_INFO': path, 'wsgi.input': StringIO()}
-    if qs:
-        kwargs.update({'QUERY_STRING': qs})
 
+    from django.core.handlers.asgi import ASGIRequest
     from django.core.handlers.wsgi import WSGIRequest
 
-    req = WSGIRequest(kwargs)
+    if cls is not ASGIRequest:
+        kwargs = {'REQUEST_METHOD': method, 'PATH_INFO': path, 'wsgi.input': StringIO()}
+        if qs:
+            kwargs.update({'QUERY_STRING': qs})
+        req = WSGIRequest(kwargs)
+    else:
+        kwargs = {'path': path, 'method': method}
+        if qs:
+            kwargs.update({'query_string': qs})
+        req = ASGIRequest(kwargs, StringIO())
 
     req.user = user
 
@@ -61,7 +68,7 @@ def make_request(cls, path='/', method='GET', user=None, headers=None, data=None
             )
             req.POST = data
 
-    if is_drf_installed() and cls is not WSGIRequest:
+    if is_drf_installed() and cls is not WSGIRequest and cls is not ASGIRequest:
         from rest_framework.parsers import FormParser
         from rest_framework.request import clone_request
 
