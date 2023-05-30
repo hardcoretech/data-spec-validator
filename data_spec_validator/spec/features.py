@@ -34,7 +34,6 @@ _FEAT_PARAMS = '__feat_params__'
 def _process_class(
     cls: Type, strict: bool, any_keys_set: Union[Set[Tuple[str, ...]], None], err_mode: ErrorMode
 ) -> Type:
-
     setattr(cls, _FEAT_PARAMS, _DSVFeatureParams(strict, any_keys_set, err_mode))
 
     return cls

@@ -69,7 +69,6 @@ def _is_view(obj):
 
 def _combine_named_params(data, **kwargs):
     def combine_params(_data, params):
-
         raise_if(bool(set(_data.keys()) & set(params.keys())), RuntimeError('Data and URL named param have conflict'))
 
         if isinstance(_data, QueryDict):
