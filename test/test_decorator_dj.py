@@ -10,8 +10,8 @@ from data_spec_validator.spec import DIGIT_STR, LIST_OF, ONE_OF, STR, Checker, d
 from .utils import is_django_installed, make_request
 
 try:
-    import django
     from django.conf import settings
+    from django.core.handlers.asgi import ASGIRequest
     from django.core.handlers.wsgi import WSGIRequest
     from django.http import HttpResponse, HttpResponseBadRequest
     from django.test import RequestFactory
@@ -22,16 +22,8 @@ except Exception:
     # To skip E402 module level import not at top of file
     pass
 
-if django.__version__ >= '3':
-    try:
-        from django.core.handlers.asgi import ASGIRequest
 
-        examine_req_classes = [WSGIRequest, ASGIRequest]
-    except ModuleNotFoundError:
-        examine_req_classes = [WSGIRequest]
-
-
-@parameterized_class(('request_class'), [(req_class,) for req_class in examine_req_classes])
+@parameterized_class(('request_class'), [(ASGIRequest,), (WSGIRequest,)])
 @unittest.skipUnless(is_django_installed(), 'Django is not installed')
 class TestDSVDJ(unittest.TestCase):
     def test_decorated_func_returns_error_response(self):
