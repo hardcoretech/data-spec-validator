@@ -34,7 +34,7 @@ def do_something(params):
 pip install data-spec-validator
 ```
 - Advance usage (decorator)
-  1. The decorator function `dsv` may depend on `Django` or `djangorestframework`.
+  1. The decorator function `dsv` may depend on `Django` (support v3.0 or later) or `djangorestframework`.
 ```shell
 pip install data-spec-validator[decorator-dj]  # Django Only
 pip install data-spec-validator[decorator]  # Django Rest Framework

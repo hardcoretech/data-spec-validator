@@ -4,7 +4,7 @@ from typing import Dict, List, Union
 from data_spec_validator.spec import DSVError, raise_if, validate_data_spec
 
 try:
-    import django
+    from django.core.handlers.asgi import ASGIRequest
     from django.core.handlers.wsgi import WSGIRequest
     from django.http import HttpResponseBadRequest, HttpResponseForbidden, QueryDict
     from django.views.generic.base import View
@@ -19,15 +19,6 @@ try:
     _enabled_drf = True
 except ModuleNotFoundError:
     print('[DSV][INFO] decorator: using "dsv" without djangorestframework')
-
-# try importing ASGIRequest (released since Django 3.0)
-if django.__version__ >= '3':
-    try:
-        from django.core.handlers.asgi import ASGIRequest
-
-        _has_support_asgi_request = True
-    except ModuleNotFoundError:
-        _has_support_asgi_request = False
 
 
 class ValidationError(Exception):
@@ -50,8 +41,6 @@ def _is_wsgi_request(obj):
 
 
 def _is_asgi_request(obj):
-    if not _has_support_asgi_request:
-        return False
     return isinstance(obj, ASGIRequest)
 
 

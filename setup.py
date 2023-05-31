@@ -22,6 +22,8 @@ setuptools.setup(
     url="https://github.com/hardcoretech/data-spec-validator",
     classifiers=[
         "Programming Language :: Python :: 3",
+        "Framework :: Django :: 3",
+        "Framework :: Django :: 4",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
@@ -31,8 +33,8 @@ setuptools.setup(
         "python-dateutil",
     ],
     extras_require={
-        'decorator': ['Django', 'djangorestframework'],
-        'decorator-dj': ['Django'],
+        'decorator': ['Django>=3.0', 'djangorestframework'],
+        'decorator-dj': ['Django>=3.0'],
     },
     python_requires=">=3.6",
     project_urls={"Changelog": "https://github.com/hardcoretech/data-spec-validator/blob/develop/CHANGELOG.md"},

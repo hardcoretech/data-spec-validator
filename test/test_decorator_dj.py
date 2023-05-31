@@ -2,7 +2,7 @@ import itertools
 import unittest
 from unittest.mock import patch
 
-from parameterized import parameterized
+from parameterized import parameterized, parameterized_class
 
 from data_spec_validator.decorator import dsv, dsv_request_meta
 from data_spec_validator.spec import DIGIT_STR, LIST_OF, ONE_OF, STR, Checker, dsv_feature
@@ -11,6 +11,7 @@ from .utils import is_django_installed, make_request
 
 try:
     from django.conf import settings
+    from django.core.handlers.asgi import ASGIRequest
     from django.core.handlers.wsgi import WSGIRequest
     from django.http import HttpResponse, HttpResponseBadRequest
     from django.test import RequestFactory
@@ -22,6 +23,7 @@ except Exception:
     pass
 
 
+@parameterized_class(('request_class'), [(ASGIRequest,), (WSGIRequest,)])
 @unittest.skipUnless(is_django_installed(), 'Django is not installed')
 class TestDSVDJ(unittest.TestCase):
     def test_decorated_func_returns_error_response(self):
@@ -90,9 +92,9 @@ class TestDSVDJ(unittest.TestCase):
         # arrange
         payload = {'test_a': 'TEST A'}
         if dsv_deco == dsv:
-            fake_request = make_request(WSGIRequest, method=method, data=payload)
+            fake_request = make_request(self.request_class, method=method, data=payload)
         elif dsv_deco == dsv_request_meta:
-            fake_request = make_request(WSGIRequest, method=method, headers=payload)
+            fake_request = make_request(self.request_class, method=method, headers=payload)
         else:
             assert False
 
@@ -116,7 +118,7 @@ class TestDSVDJ(unittest.TestCase):
         qs = 'q_a=3&q_b=true&d.o.t=dot&array[]=a1&array[]=a2&array[]=a3'
         payload = {'test_a': 'TEST A', 'test_f[]': [1, 2, 3]}
 
-        fake_request = make_request(WSGIRequest, method=method, data=payload, qs=qs)
+        fake_request = make_request(self.request_class, method=method, data=payload, qs=qs)
 
         kwargs = {'test_b': 'TEST_B', 'test_c.d.e': 'TEST C.D.E'}
 
@@ -142,7 +144,7 @@ class TestDSVDJ(unittest.TestCase):
     def test_req_list_data_with_no_multirow_set(self):
         # arrange
         payload = [{'test_a': 'TEST A1'}, {'test_a': 'TEST A2'}, {'test_a': 'TEST A3'}]
-        fake_request = make_request(WSGIRequest, method='POST', data=payload)
+        fake_request = make_request(self.request_class, method='POST', data=payload)
         kwargs = {'test_b': 'TEST_B'}
 
         class _ViewSingleRowSpec:
@@ -159,7 +161,7 @@ class TestDSVDJ(unittest.TestCase):
     def test_req_list_data_with_multirow_true(self):
         # arrange
         payload = [{'test_a': 'TEST A1'}, {'test_a': 'TEST A2'}, {'test_a': 'TEST A3'}]
-        fake_request = make_request(WSGIRequest, method='POST', data=payload)
+        fake_request = make_request(self.request_class, method='POST', data=payload)
         kwargs = {'test_b': 'TEST_B'}
 
         class _ViewSingleRowSpec:
