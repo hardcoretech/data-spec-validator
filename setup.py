@@ -34,7 +34,7 @@ setuptools.setup(
     ],
     extras_require={
         'decorator': ['Django>=3.0', 'djangorestframework'],
-        'decorator-dj': ['Django'],
+        'decorator-dj': ['Django>=3.0'],
     },
     python_requires=">=3.6",
     project_urls={"Changelog": "https://github.com/hardcoretech/data-spec-validator/blob/develop/CHANGELOG.md"},
