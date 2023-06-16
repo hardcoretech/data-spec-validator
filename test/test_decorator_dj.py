@@ -1,10 +1,12 @@
 import itertools
+import json
 import unittest
 from unittest.mock import patch
 
 from parameterized import parameterized, parameterized_class
 
 from data_spec_validator.decorator import dsv, dsv_request_meta
+from data_spec_validator.decorator.decorators import ParseError
 from data_spec_validator.spec import DIGIT_STR, LIST_OF, ONE_OF, STR, Checker, dsv_feature
 
 from .utils import is_django_installed, make_request
@@ -112,13 +114,15 @@ class TestDSVDJ(unittest.TestCase):
         view = _View(request=fake_request)
         view.decorated_func(fake_request, **kwargs)
 
-    @parameterized.expand(['PUT', 'PATCH', 'DELETE'])
-    def test_query_params_with_data(self, method):
+    @parameterized.expand(itertools.product(['POST', 'PUT', 'PATCH', 'DELETE'], [True, False]))
+    def test_query_params_with_data(self, method, is_json):
         # arrange
         qs = 'q_a=3&q_b=true&d.o.t=dot&array[]=a1&array[]=a2&array[]=a3'
         payload = {'test_a': 'TEST A', 'test_f[]': [1, 2, 3]}
 
-        fake_request = make_request(self.request_class, method=method, data=payload, qs=qs)
+        if is_json:
+            payload = json.dumps(payload).encode('utf-8')
+        fake_request = make_request(self.request_class, method=method, data=payload, qs=qs, is_json=is_json)
 
         kwargs = {'test_b': 'TEST_B', 'test_c.d.e': 'TEST C.D.E'}
 
@@ -140,6 +144,24 @@ class TestDSVDJ(unittest.TestCase):
 
         view = _View(request=fake_request)
         assert view.decorated_func(fake_request, **kwargs)
+
+    @parameterized.expand(['POST', 'PUT', 'PATCH', 'DELETE'])
+    def test_query_params_with_data_in_invalid_json_format(self, method):
+        payload = 'invalid json data'
+
+        fake_request = make_request(self.request_class, method=method, data=payload, is_json=True)
+
+        class _ViewSpec:
+            pass
+
+        class _View(View):
+            @dsv(_ViewSpec)
+            def decorated_func(self, req, *_args, **_kwargs):
+                return True
+
+        view = _View(request=fake_request)
+        with self.assertRaises(ParseError):
+            assert view.decorated_func(fake_request)
 
     def test_req_list_data_with_no_multirow_set(self):
         # arrange
