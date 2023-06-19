@@ -7,7 +7,7 @@ Changelog
 Changes:
 
 - DEPRECATIONS: The decorators support to Django version 1.x and 2.x is dropped. The minimum supported version is Django 3.0.
-
+- [feature] `dsv` decorator support loading payload from Django WSGIRequest for Content-Type: application/json
 
 3.2.0
 -----
