@@ -1,3 +1,4 @@
+import json
 from functools import wraps
 from typing import Dict, List, Union
 
@@ -102,8 +103,17 @@ def _extract_request_param_data(req, **kwargs):
             # TODO: Don't care about the query_params if it's not a dict or the payload is in list.
             return req_data
 
+    def _get_dj_payload(request):
+        content_type = request.headers.get('Content-Type')
+        if content_type == 'application/json':
+            try:
+                return request.body and json.loads(request.body) or {}
+            except Exception:
+                raise ParseError('Unable to parse request body as JSON')
+        return request.POST
+
     if is_wsgi_request or is_asgi_request:
-        data = _collect_data(req.method, req.GET, req.POST)
+        data = _collect_data(req.method, req.GET, _get_dj_payload(req))
     else:
         data = _collect_data(req.method, req.query_params, req.data)
 

@@ -33,7 +33,7 @@ def is_drf_installed():
     return True
 
 
-def make_request(cls, path='/', method='GET', user=None, headers=None, data=None, qs=None):
+def make_request(cls, path='/', method='GET', user=None, headers=None, data=None, qs=None, is_json=False):
     assert is_django_installed()
 
     from django.core.handlers.asgi import ASGIRequest
@@ -62,11 +62,15 @@ def make_request(cls, path='/', method='GET', user=None, headers=None, data=None
             req.read()  # trigger RawPostDataException and force DRF to load data from req.POST
             req.META.update(
                 {
-                    'CONTENT_TYPE': 'application/x-www-form-urlencoded',
+                    'CONTENT_TYPE': 'application/json' if is_json else 'application/x-www-form-urlencoded',
                     'CONTENT_LENGTH': len(str(data)),
                 }
             )
-            req.POST = data
+            if is_json:
+                req._body = data
+                req.POST = {}
+            else:
+                req.POST = data
 
     if is_drf_installed() and cls is not WSGIRequest and cls is not ASGIRequest:
         from rest_framework.parsers import FormParser
