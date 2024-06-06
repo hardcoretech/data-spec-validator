@@ -76,8 +76,10 @@ class DSVError(Exception):
 
 class ValidateResult:
     def __init__(self, spec: Type = None, field: str = None, value: Any = None, check: str = None, error=None):
+        from .features import get_spec_name  # FIXME: refine the structure to avoid circular import
+
         # TODO: Output spec & check information when there's a debug message level for development.
-        self.__spec = spec.__name__ if spec else None
+        self.__spec = get_spec_name(spec) if spec else None
         self.__field = field
         self.__value = value
         self.__check = check

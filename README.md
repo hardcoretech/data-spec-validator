@@ -343,6 +343,24 @@ A DSVError is raised with 3 errors in args.
 
 """
 ```
+---
+### Feature: Self-defined Spec name in error message
+```python
+from data_spec_validator.spec import Checker, dsv_feature, validate_data_spec, INT
+
+@dsv_feature(spec_name='CustomSpecName')
+class _MySpec:
+    a = Checker([INT])
+
+nok_data = dict(
+    a='abc',
+)
+
+validate_data_spec(nok_data, _MySpec)
+"""
+TypeError: field: CustomSpecName.a, reason: 'abc' is not an integer
+"""
+```
 
 ---
 ## Test

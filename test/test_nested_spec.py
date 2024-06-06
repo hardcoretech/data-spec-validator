@@ -1,6 +1,7 @@
 import unittest
 
-from data_spec_validator.spec import BOOL, DICT, DIGIT_STR, FLOAT, INT, NONE, SPEC, STR, Checker, validate_data_spec
+from data_spec_validator.spec import BOOL, DICT, DIGIT_STR, FLOAT, INT, NONE, SPEC, STR, Checker, validate_data_spec, \
+    dsv_feature
 
 from .utils import is_something_error
 
@@ -61,3 +62,28 @@ class TestNestedSpec(unittest.TestCase):
             c3_f=[],
         )
         assert is_something_error(TypeError, validate_data_spec, nok_data, NestedSpec)
+
+    def test_nested_error_field_name(self):
+        class NestedSpec:
+            class ChildSpec1:
+                @dsv_feature(spec_name='NestedSpec.c1_f.s_1')
+                class ChildSpec11:
+                    f_11 = Checker([FLOAT])
+
+                s_1 = Checker([SPEC], SPEC=ChildSpec11)
+
+            c1_f = Checker([SPEC], SPEC=ChildSpec1)
+
+        nok_data = dict(
+            c1_f=dict(
+                s_1=dict(
+                    f_11=None,
+                ),
+            ),
+        )
+
+        with self.assertRaises(TypeError) as exc_info:
+            validate_data_spec(nok_data, NestedSpec)
+
+        exc_msg = str(exc_info.exception)
+        self.assertEqual(exc_msg, 'field: NestedSpec.c1_f.s_1.f_11, reason: None is not a float')
