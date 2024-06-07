@@ -15,7 +15,7 @@ try:
     from django.conf import settings
     from django.core.handlers.asgi import ASGIRequest
     from django.core.handlers.wsgi import WSGIRequest
-    from django.http import HttpResponse, HttpResponseBadRequest
+    from django.http import HttpResponse, JsonResponse
     from django.test import RequestFactory
     from django.views import View
 
@@ -58,7 +58,7 @@ class TestDSVDJ(unittest.TestCase):
         class _View(View):
             @dsv(_ViewSpec)
             def decorated_func(self, request, named_arg):
-                pass
+                return HttpResponse(status=200)
 
         factory = RequestFactory()
         wsgi_req = factory.request()
@@ -68,7 +68,8 @@ class TestDSVDJ(unittest.TestCase):
         view.decorated_func(wsgi_req, named_arg='1')  # should pass validation
 
         resp = view.decorated_func(wsgi_req, named_arg='')
-        assert isinstance(resp, HttpResponseBadRequest)
+        self.assertIsInstance(resp, JsonResponse)
+        self.assertEqual(resp.status_code, 400)
 
     def test_data_and_url_params_should_not_have_intersection(self):
         # arrange
@@ -219,6 +220,35 @@ class TestDSVDJ(unittest.TestCase):
         fake_args = ['1', '2', 3]
         with self.assertRaises(Exception):
             non_view.decorated_func(fake_args, field_a='1')
+
+    def test_json_response_content(self):
+        # arrange
+        class _ViewSpec:
+            named_arg = Checker([DIGIT_STR])
+
+        class _View(View):
+            @dsv(_ViewSpec)
+            def decorated_func(self, request, named_arg):
+                return HttpResponse(status=200)
+
+        factory = RequestFactory()
+        req = factory.request()
+        view = _View()
+
+        # action
+        resp_valid = view.decorated_func(req, named_arg='1')
+        resp_invalid = view.decorated_func(req, named_arg='hi')
+
+        # assert
+        self.assertIsInstance(resp_valid, HttpResponse)
+        self.assertEqual(resp_valid.status_code, 200)
+
+        self.assertIsInstance(resp_invalid, JsonResponse)
+        self.assertEqual(resp_invalid.status_code, 400)
+        self.assertEqual(
+            json.loads(resp_invalid.content),
+            {'messages': ["field: _ViewSpec.named_arg, reason: 'hi' is not a digit str"]},
+        )
 
 
 if __name__ == '__main__':

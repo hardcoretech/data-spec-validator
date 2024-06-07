@@ -1,7 +1,18 @@
 import unittest
 
-from data_spec_validator.spec import BOOL, DICT, DIGIT_STR, FLOAT, INT, NONE, SPEC, STR, Checker, validate_data_spec, \
-    dsv_feature
+from data_spec_validator.spec import (
+    BOOL,
+    DICT,
+    DIGIT_STR,
+    FLOAT,
+    INT,
+    NONE,
+    SPEC,
+    STR,
+    Checker,
+    dsv_feature,
+    validate_data_spec,
+)
 
 from .utils import is_something_error
 
