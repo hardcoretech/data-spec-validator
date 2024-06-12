@@ -1,6 +1,15 @@
 Changelog
 =========
 
+3.4.0
+-----
+
+Changes:
+
+- Drop support for Python 3.6
+- [feature] `dsv` decorator now have identical behavior for Django and DRF.
+- [feature] new dsv_feature `spec_name` to customize the spec name in error messages.
+
 3.3.0
 -----
 

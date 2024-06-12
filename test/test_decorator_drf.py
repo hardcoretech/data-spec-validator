@@ -176,6 +176,29 @@ class TestDSVDRF(unittest.TestCase):
         with self.assertRaises(Exception):
             non_view.decorated_func(fake_args, field_a='1')
 
+    def test_json_response_content(self):
+        # arrange
+        class _ViewSpec:
+            field_a = Checker([DIGIT_STR])
+
+        class _View(View):
+            @dsv(_ViewSpec)
+            def decorated_func(self, request, field_a):
+                pass
+
+        factory = RequestFactory()
+        wsgi_req = factory.request()
+        req = Request(wsgi_req)
+        view = _View()
+
+        # action & assert
+        with self.assertRaises(Exception) as exc_info:
+            view.decorated_func(req, field_a='hi')
+
+        self.assertEqual(
+            exc_info.exception.detail, {'messages': ["field: _ViewSpec.field_a, reason: 'hi' is not a digit str"]}
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

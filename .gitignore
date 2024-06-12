@@ -133,3 +133,6 @@ dmypy.json
 
 # MacOS Desktop Services Store
 *.DS_Store
+
+# IntelliJ
+.idea/

@@ -5,12 +5,13 @@ from .defines import FOREACH, SPEC, ErrorMode
 
 
 class _DSVFeatureParams:
-    __slots__ = ('_strict', '_any_keys_set', '_err_mode')
+    __slots__ = ('_strict', '_any_keys_set', '_err_mode', '_spec_name')
 
-    def __init__(self, strict, any_keys_set: Union[Set[Tuple[str, ...]], None], err_mode):
+    def __init__(self, strict, any_keys_set: Union[Set[Tuple[str, ...]], None], err_mode, spec_name):
         self._strict = strict
         self._any_keys_set = any_keys_set or set()
         self._err_mode = err_mode
+        self._spec_name = spec_name
 
     @property
     def err_mode(self) -> ErrorMode:
@@ -24,28 +25,43 @@ class _DSVFeatureParams:
     def any_keys_set(self) -> set:
         return self._any_keys_set
 
+    @property
+    def spec_name(self) -> str:
+        return self._spec_name
+
     def __repr__(self):
-        return f'_DSVFeatureParams(strict={self._strict}, any_keys_set={self._any_keys_set}, err_mode={self._err_mode})'
+        return f'_DSVFeatureParams(strict={self._strict}, any_keys_set={self._any_keys_set}, err_mode={self._err_mode}), spec_name={self._spec_name}'
 
 
 _FEAT_PARAMS = '__feat_params__'
 
 
 def _process_class(
-    cls: Type, strict: bool, any_keys_set: Union[Set[Tuple[str, ...]], None], err_mode: ErrorMode
+    cls: Type,
+    strict: bool,
+    any_keys_set: Union[Set[Tuple[str, ...]], None],
+    err_mode: ErrorMode,
+    spec_name: Optional[str],
 ) -> Type:
-    setattr(cls, _FEAT_PARAMS, _DSVFeatureParams(strict, any_keys_set, err_mode))
+    setattr(cls, _FEAT_PARAMS, _DSVFeatureParams(strict, any_keys_set, err_mode, spec_name))
 
     return cls
 
 
 def dsv_feature(
-    strict: bool = False, any_keys_set: Optional[Set[Tuple[str, ...]]] = None, err_mode=ErrorMode.MSE
+    strict: bool = False,
+    any_keys_set: Optional[Set[Tuple[str, ...]]] = None,
+    err_mode=ErrorMode.MSE,
+    spec_name: Optional[str] = None,
 ) -> Callable:
     def wrap(cls: Type) -> Type:
-        return _process_class(cls, strict, any_keys_set, err_mode)
+        return _process_class(cls, strict, any_keys_set, err_mode, spec_name)
 
     return wrap
+
+
+def get_spec_name(spec) -> str:
+    return getattr(spec, _FEAT_PARAMS).spec_name if hasattr(spec, _FEAT_PARAMS) else spec.__name__
 
 
 def get_err_mode(spec) -> ErrorMode:

@@ -2,41 +2,32 @@ default_stages: [commit, push]
 fail_fast: false
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.6.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/myint/autoflake
-    rev: v2.1.1
+    rev: v2.3.1
     hooks:
       - id: autoflake
         args:
           - --in-place
           - --remove-unused-variables
           - --remove-all-unused-imports
-          - --ignore-init-module-imports # TODO: remove this
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 24.4.2
     hooks:
       - id: black
-        language_version: python3.11
+        language_version: python3.8
         args:
-          - --target-version=py311
+          - --target-version=py38
           - --line-length=120
           - --skip-string-normalization
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.7.1
-    hooks:
-      - id: prettier
-        additional_dependencies:
-        - prettier@2.7.1
-        exclude: node_modules
-        types_or: [javascript, ts]
   - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
+    rev: 7.0.0
     hooks:
       - id: flake8

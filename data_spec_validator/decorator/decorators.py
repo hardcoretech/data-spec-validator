@@ -7,7 +7,7 @@ from data_spec_validator.spec import DSVError, raise_if, validate_data_spec
 try:
     from django.core.handlers.asgi import ASGIRequest
     from django.core.handlers.wsgi import WSGIRequest
-    from django.http import HttpResponseBadRequest, HttpResponseForbidden, QueryDict
+    from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, QueryDict
     from django.views.generic.base import View
 except ModuleNotFoundError as e:
     print(f'[DSV][WARNING] decorator: "dsv" cannot be used, {e}')
@@ -150,11 +150,11 @@ def _do_validate(data, spec, multirow):
         is_multirow = _eval_is_multirow(multirow, data)
         validate_data_spec(data, spec, multirow=is_multirow)
     except ValueError as value_err:
-        error = ValidationError(str(value_err.args))
+        error = ValidationError(value_err.args)
     except PermissionError as perm_err:
-        error = PermissionDenied(str(perm_err.args))
+        error = PermissionDenied(perm_err.args)
     except (LookupError, TypeError, RuntimeError, DSVError) as parse_err:
-        error = ParseError(str(parse_err.args))
+        error = ParseError(parse_err.args)
 
     if error:
         raise error
@@ -165,20 +165,24 @@ def _get_error_response(error, use_drf):
     Return the error response based on the error type.
     If the attribute use_drf is True, Raise DRF's exception to let DRF's exception handler do something about it.
     """
+    error_msg = {'messages': error.message}
+
     if use_drf:
         err_map = {
             ValidationError: drf_exceptions.ValidationError,
             PermissionDenied: drf_exceptions.PermissionDenied,
             ParseError: drf_exceptions.ParseError,
         }
-        raise err_map[error.__class__](error.message)
+        raise err_map[error.__class__](error_msg)
 
     resp_map = {
         ValidationError: HttpResponseBadRequest,
         PermissionDenied: HttpResponseForbidden,
         ParseError: HttpResponseBadRequest,
     }
-    return resp_map[error.__class__](error.message)
+
+    status_code = resp_map[error.__class__].status_code
+    return JsonResponse(error_msg, status=status_code)
 
 
 def dsv(spec, multirow=False):
