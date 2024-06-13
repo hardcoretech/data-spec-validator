@@ -61,7 +61,9 @@ def dsv_feature(
 
 
 def get_spec_name(spec) -> str:
-    return getattr(spec, _FEAT_PARAMS).spec_name if hasattr(spec, _FEAT_PARAMS) else spec.__name__
+    if hasattr(spec, _FEAT_PARAMS) and getattr(spec, _FEAT_PARAMS).spec_name:
+        return getattr(spec, _FEAT_PARAMS).spec_name
+    return spec.__name__
 
 
 def get_err_mode(spec) -> ErrorMode:
