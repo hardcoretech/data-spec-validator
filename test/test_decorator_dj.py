@@ -7,7 +7,7 @@ from parameterized import parameterized, parameterized_class
 
 from data_spec_validator.decorator import dsv, dsv_request_meta
 from data_spec_validator.decorator.decorators import ParseError
-from data_spec_validator.spec import DIGIT_STR, LIST_OF, ONE_OF, STR, Checker, dsv_feature
+from data_spec_validator.spec import DIGIT_STR, LIST_OF, ONE_OF, STR, Checker, ErrorMode, dsv_feature
 
 from .utils import is_django_installed, make_request
 
@@ -223,6 +223,7 @@ class TestDSVDJ(unittest.TestCase):
 
     def test_json_response_content(self):
         # arrange
+        @dsv_feature(err_mode=ErrorMode.ALL)
         class _ViewSpec:
             named_arg = Checker([DIGIT_STR])
 

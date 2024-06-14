@@ -5,7 +5,7 @@ from unittest.mock import patch
 from parameterized import parameterized
 
 from data_spec_validator.decorator import dsv, dsv_request_meta
-from data_spec_validator.spec import DIGIT_STR, LIST_OF, ONE_OF, STR, Checker, dsv_feature
+from data_spec_validator.spec import DIGIT_STR, LIST_OF, ONE_OF, STR, Checker, ErrorMode, dsv_feature
 
 from .utils import is_drf_installed, make_request
 
@@ -178,6 +178,7 @@ class TestDSVDRF(unittest.TestCase):
 
     def test_json_response_content(self):
         # arrange
+        @dsv_feature(err_mode=ErrorMode.ALL)
         class _ViewSpec:
             field_a = Checker([DIGIT_STR])
 

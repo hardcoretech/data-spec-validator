@@ -165,7 +165,7 @@ def _get_error_response(error, use_drf):
     Return the error response based on the error type.
     If the attribute use_drf is True, Raise DRF's exception to let DRF's exception handler do something about it.
     """
-    error_msg = {'messages': error.message}
+    error_msg = {'messages': [str(err) for err in error.message]}
 
     if use_drf:
         err_map = {
