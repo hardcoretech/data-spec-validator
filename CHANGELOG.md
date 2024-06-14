@@ -1,6 +1,12 @@
 Changelog
 =========
 
+3.4.1
+-----
+- Fix `dsv` decorator to work with `DSVError`.
+- Fix dsv_feature `spec_name` should not show empty value.
+
+
 3.4.0
 -----
 
