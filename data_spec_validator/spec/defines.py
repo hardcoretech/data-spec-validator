@@ -6,6 +6,7 @@ from typing import Any, List, Type, Union
 NONE = 'none'
 INT = 'int'
 FLOAT = 'float'
+NUMBER = 'number'
 DIGIT_STR = 'digit_str'  # URL params cannot distinguish from strings and numbers
 STR = 'str'
 BOOL = 'bool'

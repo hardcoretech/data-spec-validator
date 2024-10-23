@@ -103,6 +103,9 @@ validate_data_spec(multirow_data, SingleSpec, multirow=True) # return True
 ### FLOAT
 `float_field = Checker([FLOAT])` or `Checker([float])`
 
+### NUMBER
+`number_field = Checker([NUMBER])`
+
 ### STR
 `str_field = Checker([STR])` or `Checker([str])`
 

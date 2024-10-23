@@ -1,6 +1,11 @@
 Changelog
 =========
 
+3.5.0
+-----
+- [feature] add `NUMBER` that accepts float and integer
+
+
 3.4.1
 -----
 - Fix `dsv` decorator to work with `DSVError`.
