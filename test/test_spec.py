@@ -26,6 +26,7 @@ from data_spec_validator.spec import (
     LIST,
     LIST_OF,
     NONE,
+    NUMBER,
     ONE_OF,
     REGEX,
     SELF,
@@ -66,6 +67,19 @@ class TestSpec(unittest.TestCase):
 
         nok_data = dict(float_field=3)
         assert is_something_error(TypeError, validate_data_spec, nok_data, FloatSpec)
+
+    def test_number(self):
+        class NumberSpec:
+            number_field = Checker([NUMBER])
+
+        ok_data = dict(number_field=3.0)
+        assert validate_data_spec(ok_data, NumberSpec)
+
+        ok_data = dict(number_field=3)
+        assert validate_data_spec(ok_data, NumberSpec)
+
+        nok_data = dict(number_field='3.0')
+        assert is_something_error(TypeError, validate_data_spec, nok_data, NumberSpec)
 
     def test_str(self):
         class StrSpec:

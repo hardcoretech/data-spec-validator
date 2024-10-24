@@ -34,6 +34,7 @@ from .checks import (
     LIST,
     LIST_OF,
     NONE,
+    NUMBER,
     ONE_OF,
     REGEX,
     SPEC,
@@ -213,6 +214,16 @@ class FloatValidator(BaseValidator):
     def validate(value, extra, data):
         ok = type(value) is float
         info = '' if ok else TypeError(f'{repr(value)} is not a float')
+        return ok, info
+
+
+class NumberValidator(BaseValidator):
+    name = NUMBER
+
+    @staticmethod
+    def validate(value, extra, data):
+        ok = type(value) is float or type(value) is int
+        info = '' if ok else TypeError(f'{repr(value)} is not a number')
         return ok, info
 
 

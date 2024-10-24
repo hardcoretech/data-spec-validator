@@ -28,6 +28,7 @@ from .defines import (
     LIST,
     LIST_OF,
     NONE,
+    NUMBER,
     ONE_OF,
     RAW_CHECK_TYPE,
     REGEX,
@@ -68,6 +69,7 @@ def _get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
         ListOfValidator,
         ListValidator,
         NoneValidator,
+        NumberValidator,
         OneOfValidator,
         RegexValidator,
         SpecValidator,
@@ -79,6 +81,7 @@ def _get_default_check_2_validator_map() -> Dict[str, BaseValidator]:
     return {
         INT: IntValidator(),
         FLOAT: FloatValidator(),
+        NUMBER: NumberValidator(),
         STR: StrValidator(),
         DIGIT_STR: DigitStrValidator(),
         BOOL: BoolValidator(),
