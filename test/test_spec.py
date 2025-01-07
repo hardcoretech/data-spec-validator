@@ -261,7 +261,7 @@ class TestSpec(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             validate_data_spec(dict(length_field='ah'), LengthSpec)
 
-        expected_error_msg = "field: LengthSpec.length_field, reason: Length of 'ah' must be greater than 3"
+        expected_error_msg = "field: LengthSpec.length_field, reason: Length of 'ah' must be greater than or equal to 3"
         self.assertEqual(str(e.exception), expected_error_msg)
 
     def test_decimal_place(self):

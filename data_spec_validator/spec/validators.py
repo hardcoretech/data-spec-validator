@@ -375,7 +375,7 @@ class LengthValidator(BaseValidator):
             info = '' if ok else ValueError(f'Length of {repr(value)} must be between {lower_bound} and {upper_bound}')
         else:
             ok = lower_bound <= len(value)
-            info = '' if ok else ValueError(f'Length of {repr(value)} must be greater than {lower_bound}')
+            info = '' if ok else ValueError(f'Length of {repr(value)} must be greater than or equal to {lower_bound}')
         return ok, info
 
 
