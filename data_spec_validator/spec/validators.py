@@ -370,8 +370,12 @@ class LengthValidator(BaseValidator):
             RuntimeError('Lower boundary cannot less than 0 for length validator'),
         )
 
-        ok = lower_bound <= len(value) <= upper_bound if upper_bound else lower_bound <= len(value)
-        info = '' if ok else ValueError(f'Length of {repr(value)} must be between {lower_bound} and {upper_bound}')
+        if upper_bound:
+            ok = lower_bound <= len(value) <= upper_bound
+            info = '' if ok else ValueError(f'Length of {repr(value)} must be between {lower_bound} and {upper_bound}')
+        else:
+            ok = lower_bound <= len(value)
+            info = '' if ok else ValueError(f'Length of {repr(value)} must be greater than or equal to {lower_bound}')
         return ok, info
 
 

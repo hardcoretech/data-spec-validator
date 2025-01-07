@@ -246,6 +246,24 @@ class TestSpec(unittest.TestCase):
         nok_data = dict(length_field='exceed')
         assert is_something_error(ValueError, validate_data_spec, nok_data, LengthSpec)
 
+        # assert error message
+        with self.assertRaises(ValueError) as e:
+            validate_data_spec(dict(length_field='ah'), LengthSpec)
+
+        expected_error_msg = "field: LengthSpec.length_field, reason: Length of 'ah' must be between 3 and 5"
+        self.assertEqual(str(e.exception), expected_error_msg)
+
+    def test_length__without_upper_limit(self):
+        class LengthSpec:
+            length_field = Checker([LENGTH], LENGTH=dict(min=3))
+
+        # assert error message
+        with self.assertRaises(ValueError) as e:
+            validate_data_spec(dict(length_field='ah'), LengthSpec)
+
+        expected_error_msg = "field: LengthSpec.length_field, reason: Length of 'ah' must be greater than or equal to 3"
+        self.assertEqual(str(e.exception), expected_error_msg)
+
     def test_decimal_place(self):
         class DecimalPlaceSpec:
             decimal_place_field = Checker([DECIMAL_PLACE], DECIMAL_PLACE=4)
