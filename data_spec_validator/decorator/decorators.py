@@ -105,7 +105,7 @@ def _extract_request_param_data(req, **kwargs):
 
     def _get_dj_payload(request):
         content_type = request.headers.get('Content-Type')
-        if content_type == 'application/json':
+        if 'application/json' in content_type:
             try:
                 return request.body and json.loads(request.body) or {}
             except Exception:

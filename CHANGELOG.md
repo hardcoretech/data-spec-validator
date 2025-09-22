@@ -1,6 +1,11 @@
 Changelog
 =========
 
+3.5.1
+-----
+- Fix payload loading issue when content type header contains but not exactly "application/json"
+
+
 3.5.0
 -----
 - [feature] add `NUMBER` that accepts float and integer
