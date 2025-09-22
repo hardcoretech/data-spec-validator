@@ -104,7 +104,7 @@ def _extract_request_param_data(req, **kwargs):
             return req_data
 
     def _get_dj_payload(request):
-        if 'application/json' in request.content_type:
+        if request.content_type and 'application/json' in request.content_type:
             try:
                 return request.body and json.loads(request.body) or {}
             except Exception:

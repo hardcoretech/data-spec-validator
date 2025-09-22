@@ -43,11 +43,36 @@ def make_request(cls, path='/', method='GET', user=None, headers=None, data=None
         kwargs = {'REQUEST_METHOD': method, 'PATH_INFO': path, 'wsgi.input': StringIO()}
         if qs:
             kwargs.update({'QUERY_STRING': qs})
+
+        # Set content type in initial environ if data is provided
+        if data and method in ['POST', 'PUT', 'PATCH', 'DELETE']:
+            kwargs.update(
+                {
+                    'CONTENT_TYPE': 'application/json' if is_json else 'application/x-www-form-urlencoded',
+                    'CONTENT_LENGTH': len(str(data)),
+                }
+            )
+
         req = WSGIRequest(kwargs)
     else:
         kwargs = {'path': path, 'method': method}
         if qs:
             kwargs.update({'query_string': qs})
+
+        # Set content type in initial scope if data is provided
+        if data and method in ['POST', 'PUT', 'PATCH', 'DELETE']:
+            headers = kwargs.get('headers', [])
+            headers.extend(
+                [
+                    [
+                        b'content-type',
+                        ('application/json' if is_json else 'application/x-www-form-urlencoded').encode(),
+                    ],
+                    [b'content-length', str(len(str(data))).encode()],
+                ]
+            )
+            kwargs['headers'] = headers
+
         req = ASGIRequest(kwargs, StringIO())
 
     req.user = user
@@ -60,12 +85,6 @@ def make_request(cls, path='/', method='GET', user=None, headers=None, data=None
             setattr(req, 'GET', data)
         elif method in ['POST', 'PUT', 'PATCH', 'DELETE']:
             req.read()  # trigger RawPostDataException and force DRF to load data from req.POST
-            req.META.update(
-                {
-                    'CONTENT_TYPE': 'application/json' if is_json else 'application/x-www-form-urlencoded',
-                    'CONTENT_LENGTH': len(str(data)),
-                }
-            )
             if is_json:
                 req._body = data
                 req.POST = {}
