@@ -10,7 +10,9 @@
         "github-actions"
       ],
       "groupName": "GitHub Actions",
-      "minimumReleaseAge": "3 days"
+      "minimumReleaseAge": "3 days",
+      "pinDigests": true
     }
   ]
 }
+
