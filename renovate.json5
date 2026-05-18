@@ -1,0 +1,15 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+  // Baseline = `hardcoretech/conf-renovate` (see preset README for the
+  // inherited policy: SHA-pinned GHA, 3-day release-age soak, OSV alerts,
+  // per-ecosystem grouping, major-update isolation, datastore version pinning).
+  // The preset auto-bumps this pin via its own customManager (v1.1.0+).
+  extends: [
+    "github>hardcoretech/conf-renovate#v1.2.1",
+    // Don't widen semver ranges (`^1.2.3` stays `^1.2.3`). Not in the preset.
+    ":preserveSemverRanges",
+  ],
+
+  labels: ["dependencies"],
+}
