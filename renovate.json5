@@ -1,0 +1,94 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+  // Renovate baseline: SHA-pinned GHA, 3-day release-age soak, OSV
+  // vulnerability alerts, per-ecosystem grouping, major-update isolation.
+  // Python (pep621 + pip_requirements) + GHA only — this repo has no
+  // Docker / npm / terraform / datastore deps.
+  extends: [
+    "config:best-practices",
+    // Don't widen semver ranges (`^1.2.3` stays `^1.2.3`).
+    ":preserveSemverRanges",
+  ],
+
+  labels: ["dependencies"],
+
+  // ---- Volume controls ----
+  // Renovate has no `prWeeklyLimit`; the effective weekly cap is achieved by
+  // combining a weekly schedule with prConcurrentLimit + prHourlyLimit. Net
+  // effect: at most 4 PRs created per Monday and at most 4 open at any time.
+  prConcurrentLimit: 4,
+  prHourlyLimit: 4,
+  schedule: ["before 5am on monday"],
+  lockFileMaintenance: { enabled: true, schedule: ["before 5am on monday"] },
+  // Suppress PRs for deps that fail Renovate's internal status checks
+  // (upstream CI red, deprecation flagged, etc.). Reduces autoclose noise.
+  internalChecksFilter: "strict",
+
+  // ---- Security baseline ----
+  osvVulnerabilityAlerts: true,
+  vulnerabilityAlerts: {
+    enabled: true,
+    labels: ["security"],
+    // groupName:null is INTENTIONAL: security/CVE PRs must NEVER be batched
+    // with manager-grouping rules.
+    groupName: null,
+  },
+
+  packageRules: [
+    // Bundle lock file maintenance across all managers + sub-projects into ONE
+    // PR per cycle so a multi-lockfile repo doesn't exhaust prConcurrentLimit.
+    {
+      description: "Bundle lock file maintenance across all managers into one PR",
+      matchUpdateTypes: ["lockFileMaintenance"],
+      groupName: "lockfile-maintenance",
+    },
+
+    // ---- GHA SHA-pin + 3-day soak ----
+    // SHA pin protects against tag-mutation supply-chain attacks; the soak
+    // window gives the community time to surface CVEs before they hit our
+    // workflows.
+    {
+      description: "GitHub Actions: pin to SHA digests + enforce 3-day release soak",
+      matchManagers: ["github-actions"],
+      pinDigests: true,
+      minimumReleaseAge: "3 days",
+    },
+
+    // ---- Backend Python grouping ----
+    // `pep621` covers pyproject.toml [project]; `pip_requirements` covers
+    // requirements*.txt. The repo uses both, so list both managers explicitly.
+    {
+      description: "Backend non-major (minor + patch) -> backend-non-major",
+      matchManagers: ["pep621", "pip_requirements"],
+      matchUpdateTypes: ["minor", "patch"],
+      groupName: "backend-non-major",
+      minimumReleaseAge: "3 days",
+    },
+    {
+      // groupName:null is INTENTIONAL. Majors must never be batched — one
+      // stuck major blocks every other major in the group.
+      description: "Backend major -> isolated PR per dep (no group)",
+      matchManagers: ["pep621", "pip_requirements"],
+      matchUpdateTypes: ["major"],
+      groupName: null,
+      minimumReleaseAge: "3 days",
+    },
+
+    // ---- GHA grouping ----
+    {
+      // 'digest' + 'pin' types included so that pinDigests:true SHA refreshes
+      // land in this group, not ungrouped.
+      description: "GHA non-major (minor, patch, digest, pin refreshes) -> gha-non-major",
+      matchManagers: ["github-actions"],
+      matchUpdateTypes: ["minor", "patch", "digest", "pin"],
+      groupName: "gha-non-major",
+    },
+    {
+      description: "GHA major -> isolated PR per action (no group)",
+      matchManagers: ["github-actions"],
+      matchUpdateTypes: ["major"],
+      groupName: null,
+    },
+  ],
+}
