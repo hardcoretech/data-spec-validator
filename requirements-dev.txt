@@ -1,7 +1,7 @@
 Django>=3.0.3
 djangorestframework>=3.11.0
 python-dateutil>=2.8.2
-pre-commit==4.6.1
+pre-commit==4.6.2
 autoflake==2.3.3
 isort==8.0.1
 black==26.5.1
